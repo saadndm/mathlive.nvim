@@ -9,6 +9,7 @@ local Util = require("mathlive.util")
 ---@field buf integer
 ---@field hidden? boolean
 ---@field closed? boolean
+---@field _state? mathlive.image.State
 local M = {}
 M.__index = M
 
@@ -16,7 +17,7 @@ M.__index = M
 
 local ns = vim.api.nvim_create_namespace("mathlive.image")
 M.ns = ns
-local placements = {} ---@type table<number, table<number, mathlive.image.Placement>>
+local placements = {} ---@type table<number, table<number, mathlive.image.Placement?>?>
 
 ---@param buf integer
 ---@param src string
@@ -234,6 +235,7 @@ function M:render_fallback(state)
   Renderer.render_fallback(self, state)
 end
 
+---@return mathlive.image.State
 function M:state()
   local wins = {} ---@type number[]
   local is_fallback = not Terminal.env().placeholders
@@ -259,7 +261,7 @@ function M:state()
   ---@field hidden boolean
   ---@field size mathlive.image.Size
   ---@field wins number[]
-  ---@field range integer[]?
+  ---@field range Range4?
   return {
     hidden = self.hidden or false,
     size = size,

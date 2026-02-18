@@ -19,7 +19,7 @@ local M = {}
 
 M.preview = nil ---@type mathlive.state.Preview?
 M.ns = vim.api.nvim_create_namespace("mathlive")
-M.placements = {} ---@type table<integer, table<integer, mathlive.state.PlacementEntry>>
+M.placements = {} ---@type table<integer, table<integer, mathlive.state.PlacementEntry?>?>
 M.typst_process = nil ---@type vim.SystemObj?
 
 local cache_path = vim.fn.stdpath("cache") .. "/mathlive/"

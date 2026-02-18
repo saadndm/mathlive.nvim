@@ -26,7 +26,11 @@ end
 ---@param formula_type mathlive.image.Type
 ---@param hash string
 local function compile_and_place(buf, extmark, formula, formula_raw, formula_type, hash)
-  State.placements[buf][extmark] = {
+  State.placements[buf] = State.placements[buf] or {}
+  local placements = State.placements[buf]
+  if not placements then return end
+
+  placements[extmark] = {
     placement = nil,
     formula = formula,
     formula_raw = formula_raw,
@@ -36,10 +40,8 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
   }
 
   Typst.compile(formula, hash, function(obj, output_path)
-    local current = State.placements[buf] and State.placements[buf][extmark]
-    if not current or current.hash ~= hash then
-      return
-    end
+    local placement = State.placements[buf] and State.placements[buf][extmark]
+    if not placement or placement.hash ~= hash then return end
 
     if obj.code == 0 then
       local p = Placement.new(buf, output_path, {
@@ -55,8 +57,8 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
         failed = false,
       }
     else
-      State.placements[buf][extmark].compiling = false
-      State.placements[buf][extmark].failed = true
+      placement.compiling = false
+      placement.failed = true
     end
   end)
 end
@@ -69,13 +71,16 @@ end
 function M.upsert_formula(buf, range, formula, formula_raw, formula_type)
   local sr, sc, er, ec = range[1], range[2], range[3], range[4]
   local existing_extmark = Util.get_extmark(buf, State.ns, sr, sc, er, ec)
+  State.placements[buf] = State.placements[buf] or {}
+  local placements = State.placements[buf]
+  if not placements then return end
 
   if existing_extmark then
-    local existing = State.placements[buf][existing_extmark]
-    if existing.placement then
+    local existing = placements[existing_extmark]
+    if existing and existing.placement then
       existing.placement:close()
     end
-    State.placements[buf][existing_extmark] = nil
+    placements[existing_extmark] = nil
   end
 
   local extmark = vim.api.nvim_buf_set_extmark(buf, State.ns, range[1], range[2], {

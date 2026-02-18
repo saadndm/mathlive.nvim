@@ -28,16 +28,17 @@ end
 ---@param extmark integer
 ---@param prev_preview mathlive.state.PlacementEntry
 function M.create(buf, extmark, prev_preview)
+  assert(prev_preview.path, "Preview missing path")
   State.preview = { buf = buf, extmark = extmark, path = prev_preview.path }
   local dim = Util.dim(prev_preview.path)
   local size = Util.pixels_to_cells(dim)
 
-  if prev_preview.placement.opts.type == 'inline_formula' then
+  if prev_preview.placement and prev_preview.placement.opts.type == 'inline_formula' then
     local preview_buf, float = M.create_float(size)
     local p = Placement.new(preview_buf, prev_preview.path, {
       type = 'preview_inline_formula',
       on_update = function(self)
-        if State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
+        if self._state and State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
           vim.api.nvim_win_set_config(float, {
             hide = false,
             relative = 'editor',
@@ -121,11 +122,6 @@ function M.close_preview()
     State.preview = nil
   end
 
-  if State.fs_handle then
-    State.fs_handle:stop()
-    State.fs_handle:close()
-    State.fs_handle = nil
-  end
   if State.typst_process then
     State.typst_process:kill('sigterm')
     State.typst_process = nil

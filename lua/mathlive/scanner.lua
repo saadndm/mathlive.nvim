@@ -87,7 +87,7 @@ function M.attach(buf, on_change)
         for _, mark in ipairs(marks) do
           local extmark = mark[1]
           local data = State.placements[buf][extmark]
-          if data.placement then
+          if data and data.placement then
             data.placement:close()
           end
           State.placements[buf][extmark] = nil

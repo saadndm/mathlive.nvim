@@ -66,7 +66,7 @@ function M.set_hl(groups, opts)
   end
 end
 
-local dims = {} ---@type table<string, {mtime: uv.fs_stat.result.time, size: mathlive.image.Size}>
+local dims = {} ---@type table<string, {mtime: uv.fs_stat.result.time, size: mathlive.image.Size}?>
 
 --- Get the dimensions of a PNG file
 ---@param file string
@@ -79,8 +79,9 @@ function M.dim(file)
   end
 
   local mtime = fs_stat.mtime
-  if dims[file] and vim.deep_equal(dims[file].mtime, mtime) then
-    return dims[file].size
+  local cached = dims[file]
+  if cached and vim.deep_equal(cached.mtime, mtime) then
+    return cached.size
   end
 
   -- extract header with IHDR chunk
@@ -94,8 +95,9 @@ function M.dim(file)
   -- Extract width and height from the IHDR chunk
   local width = header:byte(17) * 16777216 + header:byte(18) * 65536 + header:byte(19) * 256 + header:byte(20)
   local height = header:byte(21) * 16777216 + header:byte(22) * 65536 + header:byte(23) * 256 + header:byte(24)
-  dims[file] = { mtime = mtime, size = { width = width, height = height } }
-  return dims[file].size
+  local entry = { mtime = mtime, size = { width = width, height = height } }
+  dims[file] = entry
+  return entry.size
 end
 
 function M.hash(formula)

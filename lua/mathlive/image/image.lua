@@ -15,7 +15,7 @@ local M = {}
 M.__index = M
 
 local CHUNK_SIZE = 4096
-local images = {} ---@type table<string, mathlive.Image>
+local images = {} ---@type table<string, mathlive.Image?>
 local NVIM_ID_BITS = 10
 local MAX_FSIZE = 200 * 1024 * 1024 -- 200MB
 local _id = 30

@@ -170,8 +170,7 @@ end
 ---@param placement mathlive.image.Placement
 ---@param state mathlive.image.State
 function M.render_fallback(placement, state)
-  -- TODO: Implement fallback rendering (ASCII art, text replacement, etc.)
-  -- for environments where Kitty Graphics Protocol isn't supported.
+  print("Error: Rendering fallback")
 end
 
 return M

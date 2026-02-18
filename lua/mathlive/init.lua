@@ -63,9 +63,8 @@ function M.setup_autocmds()
     callback = function()
       if not State.preview then return end
 
-      local entry = State.placements[State.preview.buf]
-          and State.placements[State.preview.buf][State.preview.extmark]
-      if entry.placement then
+      local entry = State.placements[State.preview.buf] and State.placements[State.preview.buf][State.preview.extmark]
+      if entry and entry.placement then
         entry.placement:show()
       end
       Preview.close_preview()
@@ -110,7 +109,7 @@ function M.handle_cursor_moved(buf)
   if prev_extmark and cur_extmark ~= prev_extmark then
     Preview.close_preview()
     local entry = State.placements[buf] and State.placements[buf][prev_extmark]
-    if entry.placement then
+    if entry and entry.placement then
       entry.placement:show()
     end
   end
