@@ -48,6 +48,12 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
         extmark = extmark,
         type = formula_type
       })
+
+      -- Hide placement if preview is active
+      if State.preview and State.preview.extmark == extmark then
+        p:hide()
+      end
+
       State.placements[buf][extmark] = {
         placement = p,
         formula = formula,
