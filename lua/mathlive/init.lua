@@ -22,58 +22,66 @@ function M.setup_autocmds()
     pattern = table.concat(Config.filetypes, ","),
     group = group,
     callback = function(e)
-      if vim.api.nvim_buf_is_valid(e.buf) then
-        Scanner.attach(e.buf, function(buf, formula_nodes)
-          for _, node in ipairs(formula_nodes) do
-            local text = vim.treesitter.get_node_text(node, buf)
-            local formula, formula_type = Typst.clean_formula(text)
-            if formula and formula_type then
-              local sr, sc, er, ec = node:range()
-              Formula.upsert_formula(buf, { sr, sc, er, ec }, formula, text, formula_type)
-            end
+      if not vim.api.nvim_buf_is_valid(e.buf) then return end
+
+      Formula.cleanup_buffer(e.buf)
+      Scanner.detach(e.buf)
+
+      Scanner.attach(e.buf, function(buf, formula_nodes)
+        for _, node in ipairs(formula_nodes) do
+          local text = vim.treesitter.get_node_text(node, buf)
+          local formula, formula_type = Typst.clean_formula(text)
+          if formula and formula_type then
+            local sr, sc, er, ec = node:range()
+            Formula.upsert_formula(buf, { sr, sc, er, ec }, formula, text, formula_type)
           end
-        end)
-      end
+        end
+      end)
     end,
   })
 
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     group = group,
     callback = function(e)
-      if vim.tbl_contains(Config.filetypes, vim.bo[e.buf].filetype) then
-        M.handle_cursor_moved(e.buf)
-      end
+      if not vim.tbl_contains(Config.filetypes, vim.bo[e.buf].filetype) then return end
+
+      M.handle_cursor_moved(e.buf)
     end,
   })
 
   vim.api.nvim_create_autocmd({ "TextChangedI", "TextChanged" }, {
     group = group,
     callback = function(e)
-      if vim.tbl_contains(Config.filetypes, vim.bo[e.buf].filetype) then
-        M.update_preview(e.buf)
-      end
+      if not vim.tbl_contains(Config.filetypes, vim.bo[e.buf].filetype) then return end
+
+      M.update_preview(e.buf)
     end,
   })
 
   vim.api.nvim_create_autocmd("BufLeave", {
     group = group,
     callback = function()
-      if State.preview then
-        local entry = State.placements[State.preview.buf]
-            and State.placements[State.preview.buf][State.preview.extmark]
-        if entry.placement then entry.placement:show() end
-        Preview.close_preview()
+      if not State.preview then return end
+
+      local entry = State.placements[State.preview.buf]
+          and State.placements[State.preview.buf][State.preview.extmark]
+      if entry.placement then
+        entry.placement:show()
       end
+      Preview.close_preview()
     end,
   })
 
-  vim.api.nvim_create_autocmd("BufDelete", {
+  vim.api.nvim_create_autocmd({ "BufUnload", "BufWipeout", "BufDelete" }, {
     group = group,
     callback = function(e)
-      if vim.tbl_contains(Config.filetypes, vim.bo[e.buf].filetype) then
-        Scanner.detach(e.buf)
+      if State.preview and State.preview.buf == e.buf then
+        Preview.close_preview()
+      end
+      if State.placements[e.buf] then
         Formula.cleanup_buffer(e.buf)
       end
+      Scanner.detach(e.buf)
     end
   })
 
@@ -102,7 +110,9 @@ function M.handle_cursor_moved(buf)
   if prev_extmark and cur_extmark ~= prev_extmark then
     Preview.close_preview()
     local entry = State.placements[buf] and State.placements[buf][prev_extmark]
-    if entry.placement then entry.placement:show() end
+    if entry.placement then
+      entry.placement:show()
+    end
   end
 
   -- Entered formula
