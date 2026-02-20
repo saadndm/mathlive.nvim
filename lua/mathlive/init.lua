@@ -44,6 +44,10 @@ function M.setup_autocmds()
           end
         end
       end)
+
+      vim.schedule(function()
+        M.handle_cursor_moved(e.buf)
+      end)
     end,
   })
 
