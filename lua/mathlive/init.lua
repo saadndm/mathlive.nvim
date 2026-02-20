@@ -36,13 +36,48 @@ function M.setup_autocmds()
             local extmark = Util.get_extmark(buf, State.ns, sr, sc, er, ec)
             local is_active_preview = State.preview and State.preview.buf == buf and State.preview.extmark == extmark
 
+            local is_editing = false
+
+            -- Only calculate in real buffers
+            if buf == vim.api.nvim_get_current_buf() and vim.bo[buf].buftype == "" then
+              local cursor = vim.api.nvim_win_get_cursor(0)
+              local row, col = cursor[1] - 1, cursor[2]
+              is_editing = (row > sr or (row == sr and col >= sc))
+                  and (row < er or (row == er and col <= ec))
+            end
+
             if is_active_preview and extmark then
+              Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text)
+            elseif is_editing then
+              if not extmark then
+                extmark = vim.api.nvim_buf_set_extmark(buf, State.ns, sr, sc, {
+                  end_row = er,
+                  end_col = ec,
+                  right_gravity = true,
+                  end_right_gravity = false,
+                })
+              end
+
+              State.placements[buf] = State.placements[buf] or {}
+              State.placements[buf][extmark] = State.placements[buf][extmark] or {
+                placement = nil,
+                formula = formula,
+                formula_raw = text,
+                formula_type = formula_type,
+                hash = Util.hash(formula),
+                compiling = false,
+                failed = false,
+              }
+
               Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text)
             else
               Formula.upsert_formula(buf, { sr, sc, er, ec }, formula, text, formula_type)
             end
           end
         end
+        vim.schedule(function()
+          M.handle_cursor_moved(buf)
+        end)
       end)
 
       vim.schedule(function()
@@ -105,6 +140,10 @@ end
 
 ---@param buf integer
 function M.handle_cursor_moved(buf)
+  if buf ~= vim.api.nvim_get_current_buf() or vim.bo[buf].buftype ~= "" then
+    return
+  end
+
   local row, col = unpack(vim.api.nvim_win_get_cursor(0))
 
   local prev_extmark = State.preview and State.preview.extmark
@@ -121,9 +160,11 @@ function M.handle_cursor_moved(buf)
     Preview.close_preview()
     local entry = State.placements[buf] and State.placements[buf][prev_extmark]
     if entry then
-      if entry.hash ~= Util.hash(entry.formula) then
+      if not entry.placement then
         Formula.compile_formula(buf, prev_extmark)
-      elseif entry.placement then
+      elseif entry.hash ~= Util.hash(entry.formula) then
+        Formula.compile_formula(buf, prev_extmark)
+      else
         entry.placement:show()
       end
     end
@@ -132,11 +173,33 @@ function M.handle_cursor_moved(buf)
   -- Entered formula
   if cur_extmark and cur_extmark ~= prev_extmark then
     local entry = State.placements[buf] and State.placements[buf][cur_extmark]
-    if not entry or not entry.placement then return end
+    if not entry then return end
 
-    entry.placement:hide()
-    Preview.create(buf, cur_extmark, entry)
-    Typst.watch(Preview.update)
+    if entry.placement then
+      entry.placement:hide()
+    end
+
+    if entry.path then
+      -- Existing formula with cached image
+      Preview.create(buf, cur_extmark, entry)
+      Typst.watch(Preview.update_debounced)
+    else
+      -- Brand new formula
+      State.preview = {
+        buf = buf,
+        extmark = cur_extmark,
+        path = "temp.png",
+        formula_type = entry.formula_type
+      }
+      Typst.watch(function()
+        if State.preview and not State.preview.p then
+          Preview.create(buf, cur_extmark, entry)
+        else
+          Preview.update_debounced()
+        end
+      end)
+    end
+
     Typst.write_temp_formula(entry.formula)
   end
 

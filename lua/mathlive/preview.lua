@@ -28,14 +28,19 @@ end
 ---@param extmark integer
 ---@param prev_preview mathlive.state.PlacementEntry
 function M.create(buf, extmark, prev_preview)
-  assert(prev_preview.path, "Preview missing path")
-  State.preview = { buf = buf, extmark = extmark, path = prev_preview.path }
-  local dim = Util.dim(prev_preview.path)
+  local image_path = prev_preview.path or (State.cache_path .. "temp.png")
+  State.preview = { buf = buf, extmark = extmark, path = prev_preview.path or "temp.png" }
+  local dim = Util.dim(image_path)
   local size = Util.pixels_to_cells(dim)
 
-  if prev_preview.placement and prev_preview.placement.opts.type == 'inline_formula' then
+  local formula_type = prev_preview.formula_type
+  if not formula_type and prev_preview.placement then
+    formula_type = prev_preview.placement.opts.type
+  end
+
+  if formula_type == 'inline_formula' then
     local preview_buf, float = M.create_float(size)
-    local p = Placement.new(preview_buf, prev_preview.path, {
+    local p = Placement.new(preview_buf, image_path, {
       type = 'preview_inline_formula',
       on_update = function(self)
         if self._state and State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
@@ -53,8 +58,7 @@ function M.create(buf, extmark, prev_preview)
     State.preview.p = p
     State.preview.float = float
   else
-    -- For displayed equations, use extmark-based positioning
-    local p = Placement.new(buf, prev_preview.path, {
+    local p = Placement.new(buf, image_path, {
       type = 'preview_displayed_equation',
       extmark = extmark,
     })
@@ -66,7 +70,6 @@ function M.update()
   local preview = State.preview
   if not preview then return end
 
-  -- Ignore first temp.png update
   if preview.path ~= "temp.png" then
     preview.path = "temp.png"
     return
@@ -81,7 +84,6 @@ function M.update()
     local dim = Util.dim(State.cache_path .. "temp.png")
     local size = Util.pixels_to_cells(dim)
 
-    -- Close old placement FIRST
     prev_p:close()
 
     vim.api.nvim_win_set_config(float, {
@@ -98,7 +100,6 @@ function M.update()
     local buf = preview.buf
     local extmark = preview.extmark
 
-    -- Close old placement FIRST
     if prev_p then
       prev_p:close()
     end
@@ -127,5 +128,7 @@ function M.close_preview()
     State.typst_process = nil
   end
 end
+
+M.update_debounced = Util.debounce(M.update, { ms = 10 })
 
 return M
