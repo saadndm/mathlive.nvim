@@ -24,7 +24,8 @@ local function scan_tree(buf, tree)
   end
 
   for _, node in math_query:iter_captures(tree:root(), buf) do
-    local text = vim.treesitter.get_node_text(node, buf)
+    local ok, text = pcall(vim.treesitter.get_node_text, node, buf)
+    if not ok then goto continue end
     local sr, sc, _, _ = node:range()
     local id = map[sr .. ":" .. sc]
 
@@ -32,6 +33,7 @@ local function scan_tree(buf, tree)
     if not p or p.formula_raw ~= text then
       table.insert(changed_nodes, node)
     end
+    ::continue::
   end
 
   return changed_nodes
@@ -76,6 +78,7 @@ function M.attach(buf, on_change)
 
       vim.schedule(function()
         if not vim.api.nvim_buf_is_valid(buf) then return end
+        if not ltree.tree then return end
 
         local tree = ltree:tree()
         if not tree then return end
