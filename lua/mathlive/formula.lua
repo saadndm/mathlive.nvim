@@ -34,6 +34,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
     placement = nil,
     formula = formula,
     formula_raw = formula_raw,
+    formula_type = formula_type,
     hash = hash,
     compiling = true,
     failed = false,
@@ -58,6 +59,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
         placement = p,
         formula = formula,
         formula_raw = formula_raw,
+        formula_type = formula_type,
         path = output_path,
         hash = hash,
         failed = false,
@@ -98,6 +100,36 @@ function M.upsert_formula(buf, range, formula, formula_raw, formula_type)
   })
 
   compile_and_place(buf, extmark, formula, formula_raw, formula_type, Util.hash(formula))
+end
+
+---@param buf integer
+---@param extmark integer
+---@param range Range4
+---@param formula string
+---@param formula_raw string
+function M.update_formula_data(buf, extmark, range, formula, formula_raw)
+  local entry = State.placements[buf] and State.placements[buf][extmark]
+  if not entry then return end
+
+  vim.api.nvim_buf_set_extmark(buf, State.ns, range[1], range[2], {
+    id = extmark,
+    end_row = range[3],
+    end_col = range[4],
+    right_gravity = true,
+    end_right_gravity = false,
+  })
+
+  entry.formula = formula
+  entry.formula_raw = formula_raw
+end
+
+---@param buf integer
+---@param extmark integer
+function M.compile_formula(buf, extmark)
+  local entry = State.placements[buf] and State.placements[buf][extmark]
+  if not entry then return end
+
+  compile_and_place(buf, extmark, entry.formula, entry.formula_raw, entry.formula_type, Util.hash(entry.formula))
 end
 
 ---@param buf integer

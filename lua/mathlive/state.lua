@@ -12,6 +12,7 @@ local M = {}
 ---@field placement? mathlive.image.Placement
 ---@field formula string
 ---@field formula_raw string
+---@field formula_type? mathlive.image.Type
 ---@field path? string
 ---@field hash string
 ---@field compiling? boolean

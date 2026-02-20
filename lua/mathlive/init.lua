@@ -33,7 +33,14 @@ function M.setup_autocmds()
           local formula, formula_type = Typst.clean_formula(text)
           if formula and formula_type then
             local sr, sc, er, ec = node:range()
-            Formula.upsert_formula(buf, { sr, sc, er, ec }, formula, text, formula_type)
+            local extmark = Util.get_extmark(buf, State.ns, sr, sc, er, ec)
+            local is_active_preview = State.preview and State.preview.buf == buf and State.preview.extmark == extmark
+
+            if is_active_preview and extmark then
+              Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text)
+            else
+              Formula.upsert_formula(buf, { sr, sc, er, ec }, formula, text, formula_type)
+            end
           end
         end
       end)
@@ -109,8 +116,12 @@ function M.handle_cursor_moved(buf)
   if prev_extmark and cur_extmark ~= prev_extmark then
     Preview.close_preview()
     local entry = State.placements[buf] and State.placements[buf][prev_extmark]
-    if entry and entry.placement then
-      entry.placement:show()
+    if entry then
+      if entry.hash ~= Util.hash(entry.formula) then
+        Formula.compile_formula(buf, prev_extmark)
+      elseif entry.placement then
+        entry.placement:show()
+      end
     end
   end
 
