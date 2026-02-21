@@ -72,32 +72,6 @@ function M.attach(buf, on_change)
       if ltree:lang() ~= "latex" then return end
       monitor_ltree(ltree)
     end,
-    on_child_removed = function(ltree)
-      if ltree:lang() ~= "latex" then return end
-      attached_trees[buf][ltree] = nil
-
-      vim.schedule(function()
-        if not vim.api.nvim_buf_is_valid(buf) then return end
-        if not ltree.tree then return end
-
-        local tree = ltree:tree()
-        if not tree then return end
-
-        local sr, sc, er, ec = tree:root():range()
-        local marks = vim.api.nvim_buf_get_extmarks(buf, State.ns,
-          { sr, sc }, { er, ec }, { overlap = true })
-
-        for _, mark in ipairs(marks) do
-          local extmark = mark[1]
-          local data = State.placements[buf][extmark]
-          if data and data.placement then
-            data.placement:close()
-          end
-          State.placements[buf][extmark] = nil
-          pcall(vim.api.nvim_buf_del_extmark, buf, State.ns, extmark)
-        end
-      end)
-    end
   }, true)
 
   main_parser:for_each_tree(function(tree, ltree)
