@@ -172,15 +172,29 @@ function M:place(placement)
   end
 end
 
+---@param placement mathlive.image.Placement
+function M:unplace(placement)
+  self.placements[placement.id] = nil
+  if not next(self.placements) then
+    Terminal.request({ a = "d", d = "i", i = self.id })
+    if images[self.file] == self then
+      images[self.file] = nil
+    end
+  end
+end
+
 ---@param pid? number
 function M:del(pid)
-  for id, p in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
+  for _, id in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
     Terminal.request({ a = "d", d = "i", i = self.id, p = id })
-    self.placements[p] = nil
+    self.placements[id] = nil
   end
 
   if not next(self.placements) then
     Terminal.request({ a = "d", d = "i", i = self.id })
+    if images[self.file] == self then
+      images[self.file] = nil
+    end
   end
 end
 

@@ -81,34 +81,60 @@ function M.update()
     local float = preview.float
     if not float or not vim.api.nvim_win_is_valid(float) then return end
 
-    local dim = Util.dim(State.cache_path .. "temp.png")
-    local size = Util.pixels_to_cells(dim)
+    local closed_prev = false
 
-    prev_p:close()
-
-    vim.api.nvim_win_set_config(float, {
-      hide = false,
-      width = size.width,
-      height = size.height,
-    })
-
-    local p = Placement.new(prev_p.buf, State.cache_path .. "temp.png", {
+    Placement.new(prev_p.buf, State.cache_path .. "temp.png", {
       type = 'preview_inline_formula',
+      on_update = function(self)
+        if State.preview ~= preview then
+          self:close()
+          return
+        end
+
+        if self._state and State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
+          vim.api.nvim_win_set_config(float, {
+            hide = false,
+            relative = 'editor',
+            row = vim.fn.screenrow(),
+            col = vim.fn.screencol(),
+            width = self._state.size.width,
+            height = self._state.size.height,
+          })
+        end
+
+        if not closed_prev then
+          closed_prev = true
+          preview.p = self
+          if prev_p ~= self then
+            prev_p:close()
+          end
+        end
+      end,
     })
-    preview.p = p
   else
     local buf = preview.buf
     local extmark = preview.extmark
 
-    if prev_p then
-      prev_p:close()
-    end
+    local closed_prev = false
 
-    local p = Placement.new(buf, State.cache_path .. "temp.png", {
+    Placement.new(buf, State.cache_path .. "temp.png", {
       type = 'preview_displayed_equation',
       extmark = extmark,
+      on_update = function(self)
+        if State.preview ~= preview then
+          self:close()
+          return
+        end
+
+        if not closed_prev then
+          closed_prev = true
+          preview.p = self
+          if prev_p and prev_p ~= self then
+            prev_p:close()
+          end
+        end
+      end,
     })
-    preview.p = p
   end
 end
 

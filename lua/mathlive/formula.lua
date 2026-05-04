@@ -29,9 +29,10 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
   State.placements[buf] = State.placements[buf] or {}
   local placements = State.placements[buf]
   if not placements then return end
+  local existing = placements[extmark]
 
   placements[extmark] = {
-    placement = nil,
+    placement = existing and existing.placement or nil,
     formula = formula,
     formula_raw = formula_raw,
     formula_type = formula_type,
@@ -45,10 +46,16 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
     if not placement or placement.hash ~= hash then return end
 
     if obj.code == 0 then
-      local p = Placement.new(buf, output_path, {
-        extmark = extmark,
-        type = formula_type
-      })
+      local p
+      if placement.placement then
+        p = placement.placement
+        p:replace(output_path)
+      else
+        p = Placement.new(buf, output_path, {
+          extmark = extmark,
+          type = formula_type
+        })
+      end
 
       -- Hide placement if preview is active
       if State.preview and State.preview.extmark == extmark then
@@ -86,9 +93,8 @@ function M.upsert_formula(buf, range, formula, formula_raw, formula_type)
   if existing_extmark then
     local existing = placements[existing_extmark]
     if existing and existing.placement then
-      existing.placement:close()
+      existing.placement:move(existing_extmark)
     end
-    placements[existing_extmark] = nil
   end
 
   local extmark = vim.api.nvim_buf_set_extmark(buf, State.ns, range[1], range[2], {

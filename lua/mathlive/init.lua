@@ -3,11 +3,32 @@ local Formula = require("mathlive.formula")
 local Preview = require("mathlive.preview")
 local Scanner = require("mathlive.scanner")
 local State = require("mathlive.state")
+local Renderer = require("mathlive.image.renderer")
 local Typst = require("mathlive.typst")
 local Util = require("mathlive.util")
 
 ---@class mathlive
 local M = {}
+
+local function each_inline_placement(buf, fn)
+  local entries = State.placements[buf]
+  if not entries then return end
+  for _, entry in pairs(entries) do
+    local p = entry.placement
+    if p and p.opts and p.opts.type == "inline_formula" and p:valid() then
+      local range = p:get_range()
+      if range then
+        fn(p, range)
+      end
+    end
+  end
+end
+
+local function should_render_buf(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then return false end
+  if vim.bo[buf].buftype ~= "" then return false end
+  return vim.tbl_contains(Config.filetypes, vim.bo[buf].filetype)
+end
 
 function M.setup(opts)
   Config.setup(opts)
@@ -17,6 +38,45 @@ end
 
 function M.setup_autocmds()
   local group = vim.api.nvim_create_augroup("mathlive", { clear = true })
+  local provider_rows_by_win = {}
+
+  vim.api.nvim_set_decoration_provider(State.ns, {
+    on_win = function(_, win, buf, top, bot)
+      if not vim.api.nvim_win_is_valid(win) then
+        provider_rows_by_win[win] = nil
+        return false
+      end
+      if win ~= vim.api.nvim_get_current_win() then
+        provider_rows_by_win[win] = nil
+        return false
+      end
+      if vim.api.nvim_win_get_buf(win) ~= buf or not should_render_buf(buf) then
+        provider_rows_by_win[win] = nil
+        return false
+      end
+
+      local rows = {}
+      each_inline_placement(buf, function(_, range)
+        local row = range[1]
+        if row >= top and row < bot then
+          rows[row] = true
+        end
+      end)
+
+      provider_rows_by_win[win] = rows
+      return next(rows) ~= nil
+    end,
+    on_line = function(_, win, buf, row)
+      local rows = provider_rows_by_win[win]
+      if not rows or not rows[row] then
+        return
+      end
+      Renderer.render_inline_row(buf, row, win)
+    end,
+    on_end = function()
+      provider_rows_by_win = {}
+    end,
+  })
 
   vim.api.nvim_create_autocmd("FileType", {
     pattern = table.concat(Config.filetypes, ","),

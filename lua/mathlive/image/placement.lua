@@ -31,6 +31,7 @@ function M.new(buf, src, opts)
   self.img:place(self)
   self.opts = opts or {}
   self.buf = buf
+  self.file = src
   self.augroup = vim.api.nvim_create_augroup("mathlive.image." .. self.id, { clear = true })
   self.eids = {}
 
@@ -170,6 +171,41 @@ function M:close()
   self.closed = true
   self:del()
   pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
+end
+
+---@param extmark integer
+function M:move(extmark)
+  if self.closed then return end
+  self.opts.extmark = extmark
+  self._state = nil
+  self:update()
+end
+
+---@param src string
+function M:replace(src)
+  if self.closed then return end
+
+  local old_img = self.img
+  self.file = src
+  self.img = Image.new(src)
+  self.img:place(self)
+  self._state = nil
+
+  if self:ready() then
+    self:update()
+  elseif self.img:failed() then
+    self:error()
+  else
+    self:progress()
+  end
+
+  if old_img ~= self.img then
+    self._replace_old_img = old_img
+  end
+end
+
+function M:delete()
+  self:close()
 end
 
 function M:del()
@@ -328,6 +364,11 @@ function M:update()
       self:render_grid(state.size)
     else
       self:render_fallback(state)
+    end
+
+    if self._replace_old_img then
+      self._replace_old_img:del(self.id)
+      self._replace_old_img = nil
     end
 
     if self.opts.on_update then
