@@ -29,7 +29,4 @@ if vim.fn.isdirectory(cache_path) == 0 then
 end
 M.cache_path = cache_path
 
-function M.setup()
-end
-
 return M

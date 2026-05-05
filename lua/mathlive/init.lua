@@ -32,7 +32,6 @@ end
 
 function M.setup(opts)
   Config.setup(opts)
-  State.setup()
   M.setup_autocmds()
 end
 

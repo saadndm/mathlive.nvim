@@ -500,11 +500,12 @@ function M.build_row_projector(buf, row, line_text, inline_items)
     end
 
     if last_end < #self.line_text then
-      walk_gap(self.line_text, last_end, #self.line_text, inline_at, covered, replacement_at, conceallevel, function(hidden, width)
-        if consume(hidden, width) then
-          return true
-        end
-      end)
+      walk_gap(self.line_text, last_end, #self.line_text, inline_at, covered, replacement_at, conceallevel,
+        function(hidden, width)
+          if consume(hidden, width) then
+            return true
+          end
+        end)
     end
 
     return padding
