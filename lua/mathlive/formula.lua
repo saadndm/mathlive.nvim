@@ -105,7 +105,7 @@ function M.upsert_formula(buf, range, formula, formula_raw, formula_type)
     end_right_gravity = false,
   })
 
-  compile_and_place(buf, extmark, formula, formula_raw, formula_type, Util.hash(formula))
+  compile_and_place(buf, extmark, formula, formula_raw, formula_type, Typst.hash(formula))
 end
 
 ---@param buf integer
@@ -135,7 +135,7 @@ function M.compile_formula(buf, extmark)
   local entry = State.placements[buf] and State.placements[buf][extmark]
   if not entry then return end
 
-  compile_and_place(buf, extmark, entry.formula, entry.formula_raw, entry.formula_type, Util.hash(entry.formula))
+  compile_and_place(buf, extmark, entry.formula, entry.formula_raw, entry.formula_type, Typst.hash(entry.formula))
 end
 
 ---@param buf integer

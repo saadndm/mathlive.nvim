@@ -124,7 +124,7 @@ function M.setup_autocmds()
                 formula = formula,
                 formula_raw = text,
                 formula_type = formula_type,
-                hash = Util.hash(formula),
+                hash = Typst.hash(formula),
                 compiling = false,
                 failed = false,
               }
@@ -222,7 +222,7 @@ function M.handle_cursor_moved(buf)
     if entry then
       if not entry.placement then
         Formula.compile_formula(buf, prev_extmark)
-      elseif entry.hash ~= Util.hash(entry.formula) then
+      elseif entry.hash ~= Typst.hash(entry.formula) then
         Formula.compile_formula(buf, prev_extmark)
       else
         entry.placement:show()

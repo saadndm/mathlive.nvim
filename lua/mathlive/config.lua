@@ -2,10 +2,16 @@
 ---@field enabled boolean
 ---@field filetypes string[]
 ---@field color_hex string
+---@field ppi integer
+---@field text_size string
+---@field text_scale number
 local M = {
   enabled = true,
   filetypes = { "markdown" },
   color_hex = "",
+  ppi = 300,
+  text_size = "auto",
+  text_scale = 1.0,
 }
 
 local user_color_hex = nil

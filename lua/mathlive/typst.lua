@@ -1,5 +1,6 @@
 local Config = require("mathlive.config")
 local State = require("mathlive.state")
+local Util = require("mathlive.util")
 
 ---@class mathlive.typst
 local M = {}
@@ -26,11 +27,31 @@ local function get_typst_input(formula)
   return string.format(
     [[#set page(width: auto, height: auto, margin: (x: 0pt, y: 1pt), fill: none)
       #set math.text(top-edge: "bounds", bottom-edge: "bounds")
-      #set text(fill: rgb("%s"))
+      #set text(size: %s, fill: rgb("%s"))
       $%s$]],
+    M.text_size(),
     Config.color_hex,
     formula
   )
+end
+
+function M.text_size()
+  if Config.text_size ~= "auto" then
+    return Config.text_size
+  end
+
+  local scale = Config.text_scale
+  return string.format("%.4fpt", Util.FIXED_CELL_HEIGHT * 72 / (Config.ppi) * scale)
+end
+
+---@param formula string
+function M.hash(formula)
+  return Util.hash(table.concat({
+    formula,
+    Config.color_hex,
+    M.text_size(),
+    tostring(Config.ppi),
+  }, "\n"))
 end
 
 ---@param formula string
@@ -47,7 +68,7 @@ function M.compile(formula, hash, callback)
   local typst_input = get_typst_input(formula)
 
   vim.system({
-    "typst", "compile", "--format", "png", "--pages", "1", "-", output_path,
+    "typst", "compile", "--format", "png", "--ppi", tostring(Config.ppi), "--pages", "1", "-", output_path,
   }, { stdin = typst_input }, function(obj)
     vim.schedule(function()
       callback(obj, output_path)
@@ -70,7 +91,8 @@ end
 ---@param callback fun()
 function M.watch(callback)
   State.typst_process = vim.system({
-    "typst", "watch", State.cache_path .. "temp.typ", State.cache_path .. "temp.png",
+    "typst", "watch", "--ppi", tostring(Config.ppi), State.cache_path .. "temp.typ", State.cache_path ..
+  "temp.png",
   }, {
     text = true,
     stderr = function(err, data)
