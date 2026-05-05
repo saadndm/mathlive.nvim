@@ -1,8 +1,15 @@
 ---@class mathlive.util
 local M = {}
 
-M.FIXED_CELL_WIDTH = 13
-M.FIXED_CELL_HEIGHT = 26
+local cell_size ---@type mathlive.image.Size?
+local winsize_declared = false
+
+vim.api.nvim_create_autocmd("VimResized", {
+  group = vim.api.nvim_create_augroup("mathlive.util", { clear = true }),
+  callback = function()
+    cell_size = nil
+  end,
+})
 
 ---@generic T
 ---@param fn T
@@ -21,11 +28,60 @@ function M.spinner()
   return spinner[math.floor(vim.uv.hrtime() / (1e6 * 80)) % #spinner + 1]
 end
 
+---@return mathlive.image.Size
+function M.size()
+  if cell_size then
+    return cell_size
+  end
+
+  cell_size = { width = 9, height = 18 }
+
+  local ffi = require("ffi")
+  if not winsize_declared then
+    ffi.cdef([[
+      typedef struct {
+        unsigned short row;
+        unsigned short col;
+        unsigned short xpixel;
+        unsigned short ypixel;
+      } winsize;
+      int ioctl(int, int, ...);
+    ]])
+    winsize_declared = true
+  end
+
+  local TIOCGWINSZ = nil
+  if vim.fn.has("linux") == 1 then
+    TIOCGWINSZ = 0x5413
+  elseif vim.fn.has("mac") == 1 or vim.fn.has("bsd") == 1 then
+    TIOCGWINSZ = 0x40087468
+  end
+
+  if not TIOCGWINSZ then
+    return cell_size
+  end
+
+  pcall(function()
+    local sz = ffi.new("winsize")
+    if ffi.C.ioctl(1, TIOCGWINSZ, sz) ~= 0 or sz.col == 0 or sz.row == 0 or sz.xpixel == 0 or sz.ypixel == 0 then
+      return
+    end
+
+    cell_size = {
+      width = sz.xpixel / sz.col,
+      height = sz.ypixel / sz.row,
+    }
+  end)
+
+  return cell_size
+end
+
 ---@param size mathlive.image.Size
 function M.pixels_to_cells(size)
+  local cell = M.size()
   return M.norm({
-    width = size.width / M.FIXED_CELL_WIDTH,
-    height = size.height / M.FIXED_CELL_HEIGHT,
+    width = size.width / cell.width,
+    height = size.height / cell.height,
   })
 end
 

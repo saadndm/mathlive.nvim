@@ -24,33 +24,53 @@ end
 
 ---@param formula string
 local function get_typst_input(formula)
+  local cell = Util.size()
+
   return string.format(
-    [[#set page(width: auto, height: auto, margin: (x: 0pt, y: 1pt), fill: none)
+    [=[#set page(width: auto, height: auto, margin: 0pt, fill: none)
       #set math.text(top-edge: "bounds", bottom-edge: "bounds")
       #set text(size: %s, fill: rgb("%s"))
-      $%s$]],
-    M.text_size(),
+      #let cell-w = %.8fpt
+      #let cell-h = %.8fpt
+
+      #let snap-to-grid(body) = context {
+        let s = measure(body)
+        let cols = calc.ceil(s.width / cell-w)
+        let rows = calc.ceil(s.height / cell-h)
+
+        box(width: cols * cell-w, height: rows * cell-h)[
+          #align(center + horizon, body)
+        ]
+      }
+
+      #snap-to-grid[$%s$]]=],
+    M.text_size(cell),
     Config.color_hex,
+    cell.width * 72 / Config.ppi,
+    cell.height * 72 / Config.ppi,
     formula
   )
 end
 
-function M.text_size()
+---@param cell mathlive.image.Size
+function M.text_size(cell)
   if Config.text_size ~= "auto" then
     return Config.text_size
   end
 
-  local scale = Config.text_scale
-  return string.format("%.4fpt", Util.FIXED_CELL_HEIGHT * 72 / (Config.ppi) * scale)
+  return string.format("%.4fpt", cell.height * 72 / Config.ppi * Config.text_scale)
 end
 
 ---@param formula string
 function M.hash(formula)
+  local cell_size = Util.size()
   return Util.hash(table.concat({
     formula,
     Config.color_hex,
-    M.text_size(),
+    M.text_size(cell_size),
     tostring(Config.ppi),
+    string.format("%.4f", cell_size.width),
+    string.format("%.4f", cell_size.height),
   }, "\n"))
 end
 
