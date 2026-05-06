@@ -57,26 +57,9 @@ function M.new(buf, src, opts)
   placements[self.buf] = placements[self.buf] or {}
   placements[self.buf][self.id] = self
 
-  if self:ready() then
-    vim.schedule(function()
-      self:update()
-    end)
-  elseif self.img:failed() then
-    self:error()
-  elseif not self.opts.type or not self.opts.type:match("^preview") then
-    -- temporary extmark so that we can keep track of unloaded images in the buffer
-    local range = self:get_range()
-    if range then
-      self:_render({
-        {
-          row = range[1],
-          col = range[2],
-        },
-      })
-    end
-  else
-    self:progress()
-  end
+  vim.schedule(function()
+    self:update()
+  end)
 
   local update = self.update
   self.update = Util.debounce(function()
@@ -92,49 +75,6 @@ function M:get_range()
   return Util.is_valid_extmark(self.buf, State.ns, self.opts.extmark)
 end
 
-function M:error()
-  if self.opts.type == 'inline_formula' then
-    return
-  end
-  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, {
-    "# Image Load Failed",
-    "",
-    "Could not read: " .. self.img.file
-  })
-  vim.api.nvim_set_option_value("syntax", "markdown", { buf = self.buf })
-end
-
-function M:progress()
-  if self.opts.type == 'inline_formula' or self:ready() then
-    return
-  end
-  vim.bo[self.buf].modifiable = true
-  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, {})
-  vim.bo[self.buf].modifiable = false
-  local timer = assert(vim.uv.new_timer())
-  timer:start(
-    0,
-    80,
-    vim.schedule_wrap(function()
-      if self:ready() or self.img:failed() or not vim.api.nvim_buf_is_valid(self.buf) then
-        timer:stop()
-        if not timer:is_closing() then
-          timer:close()
-        end
-        return
-      end
-      vim.api.nvim_buf_clear_namespace(self.buf, ns, 0, -1)
-      vim.api.nvim_buf_set_extmark(self.buf, ns, 0, 0, {
-        virt_text = {
-          { Util.spinner(),                  "MathLiveImageSpinner" },
-          { " " },
-          { self.img.file .. " loading ...", "MathLiveImageLoading" },
-        },
-      })
-    end)
-  )
-end
-
 ---@return integer[]
 function M:wins()
   ---@param win integer
@@ -144,7 +84,7 @@ function M:wins()
 end
 
 function M:hide()
-  if self.hidden or not self:ready() then
+  if self.hidden then
     return
   end
   self.hidden = true
@@ -153,7 +93,7 @@ function M:hide()
 end
 
 function M:show()
-  if not self.hidden or not self:ready() then
+  if not self.hidden then
     return
   end
   self.hidden = false
@@ -191,13 +131,7 @@ function M:replace(src)
   self.img:place(self)
   self._state = nil
 
-  if self:ready() then
-    self:update()
-  elseif self.img:failed() then
-    self:error()
-  else
-    self:progress()
-  end
+  self:update()
 
   if old_img ~= self.img then
     self._replace_old_img = old_img
@@ -307,7 +241,7 @@ function M:state()
 end
 
 function M:valid()
-  if not self.buf or not vim.api.nvim_buf_is_valid(self.buf) or not self:ready() then
+  if not self.buf or not vim.api.nvim_buf_is_valid(self.buf) then
     return false
   end
   -- For extmark-tracked placements, check if extmark still exists and has valid range
@@ -323,10 +257,6 @@ function M:valid()
 end
 
 function M:update()
-  if not self:ready() then
-    return
-  end
-
   if not self:valid() then
     self:close()
     return
@@ -376,10 +306,6 @@ function M:update()
       self.opts.on_update(self)
     end
   end)
-end
-
-function M:ready()
-  return not self.closed and self.buf and vim.api.nvim_buf_is_valid(self.buf) and self.img:ready()
 end
 
 return M
