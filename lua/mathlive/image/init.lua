@@ -6,7 +6,7 @@
 local M = {}
 
 M.meta = {
-  desc = "Image viewer using Kitty Graphics Protocol, supported by `kitty`, `wezterm` and `ghostty`",
+  desc = "Image viewer using Kitty Graphics Protocol, supported by `kitty` and `ghostty`",
   needs_setup = true,
 }
 
@@ -19,7 +19,6 @@ M.meta = {
 ---@field env? table<string, string|true>
 ---@field terminal? string
 ---@field supported? boolean default: false
----@field placeholders? boolean default: false
 ---@field setup? fun(): boolean?
 ---@field transform? fun(data: string): string
 ---@field detected? boolean

@@ -437,10 +437,4 @@ function M.render(placement, size, hl)
   end
 end
 
----@param placement mathlive.image.Placement
----@param state mathlive.image.State
-function M.render_fallback(placement, state)
-  print("Error: Rendering fallback")
-end
-
 return M

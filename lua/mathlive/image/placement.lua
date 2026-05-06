@@ -49,14 +49,6 @@ function M:get_range()
   return Util.is_valid_extmark(self.buf, State.ns, self.opts.extmark)
 end
 
----@return integer[]
-function M:wins()
-  ---@param win integer
-  return vim.tbl_filter(function(win)
-    return vim.api.nvim_win_get_buf(win) == self.buf
-  end, vim.api.nvim_tabpage_list_wins(0))
-end
-
 function M:hide()
   if self.hidden then
     return
@@ -75,12 +67,8 @@ function M:show()
   self.hidden = false
 
   if self._state then
-    if Terminal.env().placeholders then
-      Terminal.create_virtual_placement(self.img.id, self.id, self._state.size.width, self._state.size.height)
-      self:render_grid(self._state.size)
-    else
-      self:render_fallback(self._state)
-    end
+    Terminal.create_virtual_placement(self.img.id, self.id, self._state.size.width, self._state.size.height)
+    self:render_grid(self._state.size)
   else
     self._state = nil -- Force re-render
     self:update()
@@ -181,27 +169,8 @@ function M:_render(extmarks)
   self.eids = eids
 end
 
-function M:render_fallback(state)
-  Renderer.render_fallback(self, state)
-end
-
 ---@return mathlive.image.State
 function M:state()
-  local wins = {} ---@type number[]
-  local is_fallback = not Terminal.env().placeholders
-  local zindex = vim.api.nvim_win_get_config(0).zindex or 0
-
-  for _, win in ipairs(self:wins()) do
-    if is_fallback then
-      local z = vim.api.nvim_win_get_config(win).zindex or 0
-      if z >= zindex or (zindex > 0 and z > 0) then
-        wins[#wins + 1] = win -- use if higher z-index or both are floating
-      end
-    else
-      wins[#wins + 1] = win
-    end
-  end
-
   local size = Util.pixels_to_cells(self.img.size)
 
   -- Get current range from extmark (always fresh)
@@ -210,12 +179,10 @@ function M:state()
   ---@class mathlive.image.State
   ---@field hidden boolean
   ---@field size mathlive.image.Size
-  ---@field wins number[]
   ---@field range Range4?
   return {
     hidden = self.hidden or false,
     size = size,
-    wins = wins,
     range = range,
   }
 end
@@ -252,22 +219,13 @@ function M:update()
   end
   self._state = state
 
-  if #state.wins == 0 then
-    self:del()
-    return
-  end
-
   self.img:place(self)
 
   Terminal.detect(function()
     if not self:valid() or self.closed then return end
 
-    if Terminal.env().placeholders then
-      Terminal.create_virtual_placement(self.img.id, self.id, state.size.width, state.size.height)
-      self:render_grid(state.size)
-    else
-      self:render_fallback(state)
-    end
+    Terminal.create_virtual_placement(self.img.id, self.id, state.size.width, state.size.height)
+    self:render_grid(state.size)
 
     if self._replace_old_img then
       self._replace_old_img:del(self.id)

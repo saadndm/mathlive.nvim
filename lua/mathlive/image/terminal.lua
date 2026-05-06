@@ -7,19 +7,16 @@ local environments = {
     name = "kitty",
     terminal = "kitty",
     supported = true,
-    placeholders = true,
   },
   {
     name = "ghostty",
     terminal = "ghostty",
     supported = true,
-    placeholders = true,
   },
   {
     name = "wezterm",
     terminal = "wezterm",
-    supported = true,
-    placeholders = false,
+    supported = false,
   },
   {
     name = "tmux",
@@ -31,7 +28,7 @@ local environments = {
       return ("\027Ptmux;" .. data:gsub("\027", "\027\027")) .. "\027\\"
     end,
   },
-  { name = "zellij", env = { TERM = "zellij", ZELLIJ = true },           supported = false, placeholders = false },
+  { name = "zellij", env = { TERM = "zellij", ZELLIJ = true },           supported = false },
   { name = "ssh",    env = { SSH_CLIENT = true, SSH_CONNECTION = true }, remote = true },
 }
 
@@ -72,9 +69,6 @@ function M.env()
       M._env.name = M._env.name .. "/" .. e.name
       if e.supported ~= nil then
         M._env.supported = e.supported
-      end
-      if e.placeholders ~= nil then
-        M._env.placeholders = e.placeholders
       end
       M._env.transform = e.transform or M._env.transform
       M._env.remote = e.remote or M._env.remote
@@ -124,7 +118,6 @@ function M._detect(cb)
   ---@field terminal? string
   ---@field version? string
   ---@field supported? boolean
-  ---@field placeholders? boolean
   local ret = {
     terminal = "unknown",
     version = "unknown",
