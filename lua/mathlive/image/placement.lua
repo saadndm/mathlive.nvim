@@ -35,36 +35,10 @@ function M.new(buf, src, opts)
   self.augroup = vim.api.nvim_create_augroup("mathlive.image." .. self.id, { clear = true })
   self.eids = {}
 
-  if self.opts.auto_resize then
-    vim.api.nvim_create_autocmd({ "BufWinEnter", "WinEnter", "BufWinLeave", "BufEnter" }, {
-      group = self.augroup,
-      buffer = self.buf,
-      callback = function()
-        vim.schedule(function()
-          self:update()
-        end)
-      end,
-    })
-    vim.api.nvim_create_autocmd({ "WinClosed", "WinNew", "WinEnter", "WinResized" }, {
-      group = self.augroup,
-      callback = function()
-        vim.schedule(function()
-          self:update()
-        end)
-      end,
-    })
-  end
   placements[self.buf] = placements[self.buf] or {}
   placements[self.buf][self.id] = self
 
-  vim.schedule(function()
-    self:update()
-  end)
-
-  local update = self.update
-  self.update = Util.debounce(function()
-    update(self)
-  end, { ms = 10 })
+  self.update(self)
   return self
 end
 
@@ -88,8 +62,10 @@ function M:hide()
     return
   end
   self.hidden = true
-  self._state = nil -- Force re-render
-  self:update()
+  for _, eid in ipairs(self.eids) do
+    vim.api.nvim_buf_del_extmark(self.buf, ns, eid)
+  end
+  self.eids = {}
 end
 
 function M:show()
@@ -97,8 +73,18 @@ function M:show()
     return
   end
   self.hidden = false
-  self._state = nil -- Force re-render
-  self:update()
+
+  if self._state then
+    if Terminal.env().placeholders then
+      Terminal.create_virtual_placement(self.img.id, self.id, self._state.size.width, self._state.size.height)
+      self:render_grid(self._state.size)
+    else
+      self:render_fallback(self._state)
+    end
+  else
+    self._state = nil -- Force re-render
+    self:update()
+  end
 end
 
 function M:close()
@@ -170,35 +156,29 @@ end
 
 ---@param extmarks mathlive.image.Extmark[]
 function M:_render(extmarks)
-  -- First, delete ALL old extmarks
-  if vim.api.nvim_buf_is_valid(self.buf) then
-    for _, eid in ipairs(self.eids) do
-      pcall(vim.api.nvim_buf_del_extmark, self.buf, ns, eid)
-    end
-  end
-  self.eids = {}
-
-  -- Apply hidden state to extmarks
   for _, e in ipairs(extmarks) do
     e.undo_restore = false
     e.strict = false
     if self.hidden then
       e.virt_text = nil
       e.conceal = nil
-      e.conceal_lines = nil
-      e.virt_lines = nil
+      if e.virt_lines then
+        e.virt_lines = vim.tbl_map(function(l)
+          return { { "" } }
+        end, e.virt_lines)
+      end
     end
   end
-
-  -- Create new extmarks
+  local eids = {} ---@type number[]
   for _, extmark in ipairs(extmarks) do
-    local row, col = extmark.row or 0, extmark.col or 0
-    extmark.row, extmark.col = nil, nil
-    local ok, eid = pcall(vim.api.nvim_buf_set_extmark, self.buf, ns, row, col, extmark)
-    if ok and eid then
-      table.insert(self.eids, eid)
-    end
+    local row, col = extmark.row, extmark.col
+    extmark.row, extmark.col, extmark.id = nil, nil, table.remove(self.eids, 1)
+    table.insert(eids, vim.api.nvim_buf_set_extmark(self.buf, ns, row, col, extmark))
   end
+  for _, eid in ipairs(self.eids) do
+    vim.api.nvim_buf_del_extmark(self.buf, ns, eid)
+  end
+  self.eids = eids
 end
 
 function M:render_fallback(state)

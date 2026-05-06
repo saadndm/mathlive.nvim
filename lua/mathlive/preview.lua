@@ -40,6 +40,7 @@ function M.create(buf, extmark, prev_preview)
 
   if formula_type == 'inline_formula' then
     local preview_buf, float = M.create_float(size)
+    State.preview.float = float
     local p = Placement.new(preview_buf, image_path, {
       type = 'preview_inline_formula',
       on_update = function(self)
@@ -56,7 +57,6 @@ function M.create(buf, extmark, prev_preview)
       end
     })
     State.preview.p = p
-    State.preview.float = float
   else
     local p = Placement.new(buf, image_path, {
       type = 'preview_displayed_equation',
