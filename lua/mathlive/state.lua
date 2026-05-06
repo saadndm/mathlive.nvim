@@ -4,7 +4,8 @@ local M = {}
 ---@class mathlive.state.Preview
 ---@field buf integer
 ---@field extmark integer
----@field path string
+---@field path? string
+---@field formula_type? mathlive.image.Type
 ---@field float? integer
 ---@field p? mathlive.image.Placement
 

@@ -26,7 +26,7 @@ end
 
 ---@param buf integer
 ---@param extmark integer
----@param prev_preview mathlive.state.PlacementEntry
+---@param prev_preview mathlive.state.PlacementEntry|mathlive.state.Preview
 function M.create(buf, extmark, prev_preview)
   local image_path = prev_preview.path or (State.cache_path .. "temp.png")
   State.preview = { buf = buf, extmark = extmark, path = prev_preview.path or "temp.png" }

@@ -238,21 +238,20 @@ function M.handle_cursor_moved(buf)
       entry.placement:hide()
     end
 
-    if entry.path then
+    if entry.path and entry.hash == Typst.hash(entry.formula) then
       -- Existing formula with cached image
       Preview.create(buf, cur_extmark, entry)
       Typst.watch(Preview.update_debounced)
     else
-      -- Brand new formula
+      -- Brand new or edited formula without a matching cached image
       State.preview = {
         buf = buf,
         extmark = cur_extmark,
-        path = "temp.png",
-        formula_type = entry.formula_type
+        formula_type = entry.formula_type,
       }
       Typst.watch(function()
         if State.preview and not State.preview.p then
-          Preview.create(buf, cur_extmark, entry)
+          Preview.create(buf, cur_extmark, State.preview)
         else
           Preview.update_debounced()
         end
