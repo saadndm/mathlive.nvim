@@ -283,15 +283,7 @@ function M:update()
     if not self:valid() or self.closed then return end
 
     if Terminal.env().placeholders then
-      Terminal.request({
-        a = "p",
-        U = 1,
-        i = self.img.id,
-        p = self.id,
-        C = 1,
-        c = state.size.width,
-        r = state.size.height,
-      })
+      Terminal.create_virtual_placement(self.img.id, self.id, state.size.width, state.size.height)
       self:render_grid(state.size)
     else
       self:render_fallback(state)

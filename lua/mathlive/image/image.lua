@@ -11,12 +11,7 @@ local Util = require("mathlive.util")
 local M = {}
 M.__index = M
 
-local CHUNK_SIZE = 4096
 local images = {} ---@type table<string, mathlive.Image?>
-local NVIM_ID_BITS = 10
-local _id = 30
-local _pid = 10
-local nvim_id = 0
 
 ---@param file string
 function M.new(file)
@@ -36,15 +31,7 @@ function M.new(file)
 
   images[file] = self
 
-  _id = _id + 1
-  local bit = require("bit")
-  -- generate a unique id for this nvim instance (10 bits)
-  if nvim_id == 0 then
-    local pid = vim.fn.getpid()
-    nvim_id = bit.band(bit.bxor(pid, bit.rshift(pid, 5), bit.rshift(pid, NVIM_ID_BITS)), 0x3FF)
-  end
-  -- interleave the nvim id and the image id
-  self.id = bit.bor(bit.lshift(nvim_id, 24 - NVIM_ID_BITS), _id)
+  self.id = Terminal.generate_id()
 
   return self
 end
@@ -53,50 +40,21 @@ end
 function M:send()
   assert(not self.sent, "Image already sent")
   self.sent = true
-  -- local image
   if not Terminal.env().remote then
-    Terminal.request({
-      t = "f",
-      i = self.id,
-      f = 100,
-      data = vim.base64.encode(self.file),
-    })
+    Terminal.transmit_local_png(self.id, self.file)
   else
-    -- remote image
     local fd = assert(io.open(self.file, "rb"), "Failed to open file: " .. self.file)
     local data = fd:read("*a")
     fd:close()
-    data = vim.base64.encode(data) -- encode the data
-    local offset = 1
-    while offset <= #data do
-      local chunk = data:sub(offset, offset + CHUNK_SIZE - 1)
-      local first = offset == 1
-      offset = offset + CHUNK_SIZE
-      local last = offset > #data
-      if first then
-        Terminal.request({
-          t = "d",
-          i = self.id,
-          f = 100,
-          m = last and 0 or 1,
-          data = chunk,
-        })
-      else
-        Terminal.request({
-          m = last and 0 or 1,
-          data = chunk,
-        })
-      end
-      vim.uv.sleep(1)
-    end
+
+    Terminal.transmit(self.id, data)
   end
 end
 
 ---@param placement mathlive.image.Placement
 function M:place(placement)
   if not placement.id then
-    _pid = _pid + 1
-    placement.id = _pid
+    placement.id = Terminal.generate_id()
   end
   self.placements[placement.id] = placement
   -- Wait for terminal detection before sending
@@ -107,34 +65,21 @@ function M:place(placement)
   end)
 end
 
----@param placement mathlive.image.Placement
-function M:unplace(placement)
-  self.placements[placement.id] = nil
-  if not next(self.placements) then
-    Terminal.request({ a = "d", d = "i", i = self.id })
-    if images[self.file] == self then
-      images[self.file] = nil
-    end
-  end
-end
-
----@param pid? number
+---@param pid integer
 function M:del(pid)
-  for _, id in ipairs(pid and { pid } or vim.tbl_keys(self.placements)) do
-    Terminal.request({ a = "d", d = "i", i = self.id, p = id })
-    self.placements[id] = nil
+  if not self.placements[pid] then
+    return
   end
 
+  Terminal.delete_placement(self.id, pid)
+  self.placements[pid] = nil
   if not next(self.placements) then
-    Terminal.request({ a = "d", d = "i", i = self.id })
+    Terminal.delete_image(self.id)
+    self.sent = false
     if images[self.file] == self then
       images[self.file] = nil
     end
   end
-end
-
-function M.clear()
-  images = {}
 end
 
 return M
