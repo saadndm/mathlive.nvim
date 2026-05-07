@@ -68,12 +68,14 @@ function M.create(buf, extmark, prev_preview)
       end
     })
     State.preview.p = p
+    p:update()
   else
     local p = Placement.new(buf, image_path, {
       type = 'preview_displayed_equation',
       extmark = extmark,
     })
     State.preview.p = p
+    p:update()
   end
 end
 
@@ -94,7 +96,7 @@ function M.update()
 
     local closed_prev = false
 
-    Placement.new(prev_p.buf, State.cache_path .. "temp.png", {
+    local p = Placement.new(prev_p.buf, State.cache_path .. "temp.png", {
       type = 'preview_inline_formula',
       on_update = function(self)
         if State.preview ~= preview then
@@ -115,13 +117,14 @@ function M.update()
         end
       end,
     })
+    p:update()
   else
     local buf = preview.buf
     local extmark = preview.extmark
 
     local closed_prev = false
 
-    Placement.new(buf, State.cache_path .. "temp.png", {
+    local p = Placement.new(buf, State.cache_path .. "temp.png", {
       type = 'preview_displayed_equation',
       extmark = extmark,
       on_update = function(self)
@@ -139,6 +142,7 @@ function M.update()
         end
       end,
     })
+    p:update()
   end
 end
 

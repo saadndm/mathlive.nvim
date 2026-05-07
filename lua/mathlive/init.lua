@@ -250,7 +250,9 @@ function M.handle_cursor_moved(buf)
         formula_type = entry.formula_type,
       }
       Typst.watch(function()
-        if State.preview and not State.preview.p then
+        if not State.preview or State.preview.buf ~= buf or State.preview.extmark ~= cur_extmark then return end
+
+        if not State.preview.p then
           Preview.create(buf, cur_extmark, State.preview)
         else
           Preview.update_debounced()

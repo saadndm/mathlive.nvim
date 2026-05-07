@@ -1,4 +1,5 @@
 local Placement = require("mathlive.image.placement")
+local Preview = require("mathlive.preview")
 local State = require("mathlive.state")
 local Typst = require("mathlive.typst")
 local Util = require("mathlive.util")
@@ -42,24 +43,26 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
   }
 
   Typst.compile(formula, hash, function(obj, output_path)
-    local placement = State.placements[buf] and State.placements[buf][extmark]
-    if not placement or placement.hash ~= hash then return end
+    local entry = State.placements[buf] and State.placements[buf][extmark]
+    if not entry or entry.hash ~= hash then return end
 
     if obj.code == 0 then
       local p
-      if placement.placement then
-        p = placement.placement
+      if entry.placement then
+        p = entry.placement
         p:replace(output_path)
       else
         p = Placement.new(buf, output_path, {
           extmark = extmark,
-          type = formula_type
+          type = formula_type,
         })
       end
 
-      -- Hide placement if preview is active
-      if State.preview and State.preview.extmark == extmark then
+      -- Hide placement if there is an active preview renderer.
+      if State.preview and State.preview.extmark == extmark and (State.preview.p or State.preview.float) then
         p:hide()
+      else
+        p:show()
       end
 
       State.placements[buf][extmark] = {
@@ -71,9 +74,13 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
         hash = hash,
         failed = false,
       }
+
+      if not entry.placement then
+        p:update()
+      end
     else
-      placement.compiling = false
-      placement.failed = true
+      entry.compiling = false
+      entry.failed = true
     end
   end)
 end
@@ -139,14 +146,32 @@ function M.compile_formula(buf, extmark)
 end
 
 ---@param buf integer
+---@param extmark integer
+function M.remove_formula(buf, extmark)
+  local entry = State.placements[buf] and State.placements[buf][extmark]
+  if entry and entry.placement then
+    entry.placement:close()
+  end
+
+  if State.placements[buf] then
+    State.placements[buf][extmark] = nil
+  end
+
+  if State.preview and State.preview.buf == buf and State.preview.extmark == extmark then
+    Preview.close_preview()
+  end
+
+  if vim.api.nvim_buf_is_valid(buf) then
+    pcall(vim.api.nvim_buf_del_extmark, buf, State.ns, extmark)
+  end
+end
+
+---@param buf integer
 function M.cleanup_buffer(buf)
   if not State.placements[buf] then return end
 
-  for extmark_id, data in pairs(State.placements[buf]) do
-    if data.placement then
-      data.placement:close()
-    end
-    pcall(vim.api.nvim_buf_del_extmark, buf, State.ns, extmark_id)
+  for extmark_id, _ in pairs(State.placements[buf]) do
+    M.remove_formula(buf, extmark_id)
   end
 
   State.placements[buf] = nil

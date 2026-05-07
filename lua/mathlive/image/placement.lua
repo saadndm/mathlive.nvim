@@ -38,7 +38,6 @@ function M.new(buf, src, opts)
   placements[self.buf] = placements[self.buf] or {}
   placements[self.buf][self.id] = self
 
-  self.update(self)
   return self
 end
 
