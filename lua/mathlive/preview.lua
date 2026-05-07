@@ -5,6 +5,24 @@ local Placement = require("mathlive.image.placement")
 ---@class mathlive.preview
 local M = {}
 
+---@param float integer
+---@param preview mathlive.state.Preview
+---@param size mathlive.image.Size
+local function position_inline_float(float, preview, size)
+  -- Allow nvim to refresh screen position first
+  vim.schedule(function()
+    if State.preview ~= preview or not vim.api.nvim_win_is_valid(float) then return end
+    vim.api.nvim_win_set_config(float, {
+      hide = false,
+      relative = 'editor',
+      row = vim.fn.screenrow(),
+      col = vim.fn.screencol(),
+      width = size.width,
+      height = size.height,
+    })
+  end)
+end
+
 ---@param size mathlive.image.Size
 function M.create_float(size)
   local buf = vim.api.nvim_create_buf(false, true)
@@ -45,14 +63,7 @@ function M.create(buf, extmark, prev_preview)
       type = 'preview_inline_formula',
       on_update = function(self)
         if self._state and State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
-          vim.api.nvim_win_set_config(float, {
-            hide = false,
-            relative = 'editor',
-            row = vim.fn.screenrow(),
-            col = vim.fn.screencol(),
-            width = self._state.size.width,
-            height = self._state.size.height,
-          })
+          position_inline_float(float, State.preview, self._state.size)
         end
       end
     })
@@ -92,14 +103,7 @@ function M.update()
         end
 
         if self._state and State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
-          vim.api.nvim_win_set_config(float, {
-            hide = false,
-            relative = 'editor',
-            row = vim.fn.screenrow(),
-            col = vim.fn.screencol(),
-            width = self._state.size.width,
-            height = self._state.size.height,
-          })
+          position_inline_float(float, State.preview, self._state.size)
         end
 
         if not closed_prev then
