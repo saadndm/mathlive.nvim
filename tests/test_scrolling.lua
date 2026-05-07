@@ -117,6 +117,7 @@ local function collect_placements(target)
   return target.lua_get([[
     (function()
       local State = require("mathlive.state")
+      local Util = require("mathlive.util")
       local buf = vim.api.nvim_get_current_buf()
       local placements = {}
 
@@ -124,16 +125,16 @@ local function collect_placements(target)
 
       for _, entry in pairs(State.placements[buf]) do
         local placement = entry.placement
-        if placement and placement:valid() then
+        if placement then
           local range = placement:get_range()
-          local state = placement:state()
-          if range and state.size then
+          if range then
+            local size = Util.pixels_to_cells(placement.img.size)
             placements[#placements + 1] = {
               id = placement.id,
               type = placement.opts.type,
               range = range,
-              width = state.size.width,
-              height = state.size.height,
+              width = size.width,
+              height = size.height,
               grid = vim.deepcopy(placement._grid or {}),
             }
           end

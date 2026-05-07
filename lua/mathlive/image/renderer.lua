@@ -1,3 +1,5 @@
+local Util = require("mathlive.util")
+
 ---@class mathlive.image.renderer
 local M = {}
 
@@ -54,7 +56,7 @@ local function collect_inline_placements(row, entries)
       if not range then
         p:close()
         entries[extmark_id] = nil
-      elseif range[1] == row and p:valid() then
+      elseif range[1] == row then
         placements[#placements + 1] = { placement = p, range = range }
       end
     end
@@ -168,7 +170,7 @@ local function compute_layout(state)
 
       positions_by_id[p.id] = {
         start_col = display_col,
-        width = p._size and p._size.width or 1,
+        width = Util.pixels_to_cells(p.img.size).width,
       }
 
       display_col = display_col + positions_by_id[p.id].width
@@ -339,10 +341,8 @@ end
 ---@param placement mathlive.image.Placement
 ---@param grid string[]
 ---@param hl string
----@param size mathlive.image.Size
-function Strategies.displayed_equation(placement, grid, hl, size)
+function Strategies.displayed_equation(placement, grid, hl)
   placement._grid = grid
-  placement._size = size
 
   local range = placement:get_range()
   if not range then return end
@@ -399,10 +399,8 @@ end
 
 ---@param placement mathlive.image.Placement
 ---@param grid string[]
----@param hl string
-function Strategies.inline_formula(placement, grid, hl, size)
+function Strategies.inline_formula(placement, grid)
   placement._grid = grid
-  placement._size = size
 
   local range = placement:get_range()
   if not range then return end
@@ -433,7 +431,7 @@ function M.render(placement, size, hl)
   local formula_type = placement.opts.type
 
   if formula_type and Strategies[formula_type] then
-    Strategies[formula_type](placement, grid, hl, size)
+    Strategies[formula_type](placement, grid, hl)
   end
 end
 

@@ -214,20 +214,26 @@ T["projector:scroll_padding_before"] = function(conceallevel)
 
   local padding = child.lua_get([[
     (function()
+      local Util = require("mathlive.util")
+
       local buf = vim.api.nvim_get_current_buf()
       local row = 0
       local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
       local start_col = assert(line:find("`code`", 1, true)) - 1
       local end_col = start_col + #"`code`"
+      local cell = Util.size()
 
       local projector = M.build_row_projector(buf, row, line, {
         {
           range = { row, start_col, row, end_col },
           placement = {
-            state = function()
-              return { size = { width = 3 } }
-            end,
-          },
+            img = {
+              size = {
+                width = cell.width * 3,
+                height = cell.height,
+              }
+            }
+          }
         },
       })
       local before = projector:screen_width(0, start_col)

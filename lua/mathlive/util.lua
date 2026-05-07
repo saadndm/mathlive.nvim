@@ -23,11 +23,6 @@ function M.debounce(fn, opts)
   end
 end
 
-function M.spinner()
-  local spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
-  return spinner[math.floor(vim.uv.hrtime() / (1e6 * 80)) % #spinner + 1]
-end
-
 ---@return mathlive.image.Size
 function M.size()
   if cell_size then

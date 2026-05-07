@@ -5,11 +5,6 @@
 ---@field util mathlive.util
 local M = {}
 
-M.meta = {
-  desc = "Image viewer using Kitty Graphics Protocol, supported by `kitty` and `ghostty`",
-  needs_setup = true,
-}
-
 ---@alias mathlive.image.Size {width: integer, height: integer}
 ---@alias mathlive.image.Pos {[1]: integer, [2]: integer}
 ---@alias mathlive.image.Type "inline_formula"|"displayed_equation"|"preview_inline_formula"|"preview_displayed_equation"
@@ -30,8 +25,6 @@ M.meta = {
 ---@field range? Range4
 ---@field width? integer
 ---@field height? integer
----@field on_update? fun(placement: mathlive.image.Placement)
----@field on_update_pre? fun(placement: mathlive.image.Placement)
 ---@field type mathlive.image.Type
 ---@field auto_resize? boolean
 ---@field extmark? integer

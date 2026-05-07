@@ -8,8 +8,6 @@ local Util = require("mathlive.util")
 ---@field id integer
 ---@field buf integer
 ---@field hidden? boolean
----@field closed? boolean
----@field _state? mathlive.image.State
 local M = {}
 M.__index = M
 
@@ -17,7 +15,6 @@ M.__index = M
 
 local ns = vim.api.nvim_create_namespace("mathlive.image")
 M.ns = ns
-local placements = {} ---@type table<number, table<number, mathlive.image.Placement?>?>
 
 ---@param buf integer
 ---@param src string
@@ -32,11 +29,7 @@ function M.new(buf, src, opts)
   self.opts = opts or {}
   self.buf = buf
   self.file = src
-  self.augroup = vim.api.nvim_create_augroup("mathlive.image." .. self.id, { clear = true })
   self.eids = {}
-
-  placements[self.buf] = placements[self.buf] or {}
-  placements[self.buf][self.id] = self
 
   return self
 end
@@ -53,6 +46,7 @@ function M:hide()
     return
   end
   self.hidden = true
+
   for _, eid in ipairs(self.eids) do
     vim.api.nvim_buf_del_extmark(self.buf, ns, eid)
   end
@@ -65,70 +59,31 @@ function M:show()
   end
   self.hidden = false
 
-  if self._state then
-    Terminal.create_virtual_placement(self.img.id, self.id, self._state.size.width, self._state.size.height)
-    self:render_grid(self._state.size)
-  else
-    self._state = nil -- Force re-render
-    self:update()
-  end
+  self:render()
 end
 
 function M:close()
-  if self.closed then
-    return
-  end
-  if placements[self.buf] then
-    placements[self.buf][self.id] = nil
-  end
-  self.closed = true
-  self:del()
-  pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
-end
-
----@param extmark integer
-function M:move(extmark)
-  if self.closed then return end
-  self.opts.extmark = extmark
-  self._state = nil
-  self:update()
-end
-
----@param src string
-function M:replace(src)
-  if self.closed then return end
-
-  local old_img = self.img
-  self.file = src
-  self.img = Image.new(src)
-  self.img:place(self)
-  self._state = nil
-
-  self:update()
-
-  if old_img ~= self.img then
-    self._replace_old_img = old_img
-  end
-end
-
-function M:delete()
-  self:close()
-end
-
-function M:del()
+  self:hide()
   self.img:del(self.id)
-  -- Clear all rendering extmarks
-  if vim.api.nvim_buf_is_valid(self.buf) then
-    for _, eid in ipairs(self.eids) do
-      pcall(vim.api.nvim_buf_del_extmark, self.buf, ns, eid)
-    end
-  end
   self.eids = {}
 end
 
+---@param new_file string
+function M:replace(new_file)
+  local old_img = self.img
+
+  self.file = new_file
+  self.img = Image.new(new_file)
+  self.img:place(self)
+
+  if old_img ~= self.img then
+    old_img:del(self.id)
+  end
+end
+
 --- Renders the unicode placeholder grid in the buffer
----@param size mathlive.image.Size
-function M:render_grid(size)
+---@param cell_size mathlive.image.Size
+function M:render_grid(cell_size)
   local hl = "MathLiveImage" .. self.id -- image id is encoded in the foreground color
   Util.set_hl({
     [hl] = {
@@ -138,7 +93,7 @@ function M:render_grid(size)
     },
   })
 
-  Renderer.render(self, size, hl)
+  Renderer.render(self, cell_size, hl)
 end
 
 ---@param extmarks mathlive.image.Extmark[]
@@ -168,73 +123,10 @@ function M:_render(extmarks)
   self.eids = eids
 end
 
----@return mathlive.image.State
-function M:state()
-  local size = Util.pixels_to_cells(self.img.size)
-
-  -- Get current range from extmark (always fresh)
-  local range = self:get_range()
-
-  ---@class mathlive.image.State
-  ---@field hidden boolean
-  ---@field size mathlive.image.Size
-  ---@field range Range4?
-  return {
-    hidden = self.hidden or false,
-    size = size,
-    range = range,
-  }
-end
-
-function M:valid()
-  if not self.buf or not vim.api.nvim_buf_is_valid(self.buf) then
-    return false
-  end
-  -- For extmark-tracked placements, check if extmark still exists and has valid range
-  if self.opts.extmark then
-    local range = self:get_range()
-    if not range then
-      return false -- Extmark was deleted or collapsed
-    end
-    return range[1] < vim.api.nvim_buf_line_count(self.buf)
-  end
-  -- For preview placements without extmark tracking, always valid if buffer is valid
-  return true
-end
-
-function M:update()
-  if not self:valid() then
-    self:close()
-    return
-  end
-
-  if self.opts.on_update_pre then
-    self.opts.on_update_pre(self)
-  end
-
-  local state = self:state()
-  if vim.deep_equal(state, self._state) then
-    return
-  end
-  self._state = state
-
-  self.img:place(self)
-
-  Terminal.detect(function()
-    if not self:valid() or self.closed then return end
-
-    Terminal.create_virtual_placement(self.img.id, self.id, state.size.width, state.size.height)
-    self:render_grid(state.size)
-
-    if self._replace_old_img then
-      self._replace_old_img:del(self.id)
-      self._replace_old_img = nil
-    end
-
-    if self.opts.on_update then
-      self.opts.on_update(self)
-    end
-  end)
+function M:render()
+  local cell_size = Util.pixels_to_cells(self.img.size)
+  Terminal.create_virtual_placement(self.img.id, self.id, cell_size.width, cell_size.height)
+  self:render_grid(cell_size)
 end
 
 return M

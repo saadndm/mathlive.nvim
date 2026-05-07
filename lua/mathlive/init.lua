@@ -15,7 +15,7 @@ local function each_inline_placement(buf, fn)
   if not entries then return end
   for _, entry in pairs(entries) do
     local p = entry.placement
-    if p and p.opts and p.opts.type == "inline_formula" and p:valid() then
+    if p and p.opts and p.opts.type == "inline_formula" then
       local range = p:get_range()
       if range then
         fn(p, range)

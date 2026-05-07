@@ -1,3 +1,5 @@
+local Util = require("mathlive.util")
+
 local M = {}
 
 ---@class mathlive.conceal.InlineItem
@@ -467,8 +469,7 @@ function M.build_row_projector(buf, row, line_text, inline_items)
         end
       end
 
-      local width = p:state().size.width
-      if consume(false, width) then
+      if consume(false, Util.pixels_to_cells(p.img.size).width) then
         return padding
       end
 

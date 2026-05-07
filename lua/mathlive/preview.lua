@@ -61,21 +61,18 @@ function M.create(buf, extmark, prev_preview)
     State.preview.float = float
     local p = Placement.new(preview_buf, image_path, {
       type = 'preview_inline_formula',
-      on_update = function(self)
-        if self._state and State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
-          position_inline_float(float, State.preview, self._state.size)
-        end
-      end
     })
+
     State.preview.p = p
-    p:update()
+    p:render()
+    position_inline_float(float, State.preview, Util.pixels_to_cells(p.img.size))
   else
     local p = Placement.new(buf, image_path, {
       type = 'preview_displayed_equation',
       extmark = extmark,
     })
     State.preview.p = p
-    p:update()
+    p:render()
   end
 end
 
@@ -88,61 +85,16 @@ function M.update()
     return
   end
 
-  local prev_p = preview.p
+  local p = preview.p
+  if not p then return end
 
-  if prev_p and prev_p.opts.type == 'preview_inline_formula' then
-    local float = preview.float
-    if not float or not vim.api.nvim_win_is_valid(float) then return end
+  p:replace(State.cache_path .. "temp.png")
+  p:render()
 
-    local closed_prev = false
-
-    local p = Placement.new(prev_p.buf, State.cache_path .. "temp.png", {
-      type = 'preview_inline_formula',
-      on_update = function(self)
-        if State.preview ~= preview then
-          self:close()
-          return
-        end
-
-        if self._state and State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
-          position_inline_float(float, State.preview, self._state.size)
-        end
-
-        if not closed_prev then
-          closed_prev = true
-          preview.p = self
-          if prev_p ~= self then
-            prev_p:close()
-          end
-        end
-      end,
-    })
-    p:update()
-  else
-    local buf = preview.buf
-    local extmark = preview.extmark
-
-    local closed_prev = false
-
-    local p = Placement.new(buf, State.cache_path .. "temp.png", {
-      type = 'preview_displayed_equation',
-      extmark = extmark,
-      on_update = function(self)
-        if State.preview ~= preview then
-          self:close()
-          return
-        end
-
-        if not closed_prev then
-          closed_prev = true
-          preview.p = self
-          if prev_p and prev_p ~= self then
-            prev_p:close()
-          end
-        end
-      end,
-    })
-    p:update()
+  if p.opts.type == "preview_inline_formula" then
+    if preview.float then
+      position_inline_float(preview.float, preview, Util.pixels_to_cells(p.img.size))
+    end
   end
 end
 

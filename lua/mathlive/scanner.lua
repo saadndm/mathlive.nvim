@@ -95,13 +95,11 @@ function M.attach(buf, on_change)
   })
 
   local function on_tree_change(_, tree)
-    vim.schedule(function()
-      if not vim.api.nvim_buf_is_valid(buf) then return end
-      local changed = scan_tree(buf, tree)
-      if #changed > 0 then
-        on_change(buf, changed)
-      end
-    end)
+    if not vim.api.nvim_buf_is_valid(buf) then return end
+    local changed = scan_tree(buf, tree)
+    if #changed > 0 then
+      on_change(buf, changed)
+    end
   end
 
   local function monitor_ltree(ltree)
