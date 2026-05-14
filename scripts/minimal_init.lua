@@ -6,8 +6,7 @@ require("nvim-treesitter").setup({
   install_dir = "deps/parsers"
 })
 
-local ok, err_or_ok = require
-  ("nvim-treesitter")
+local ok, err_or_ok = require("nvim-treesitter")
   .install({
     "markdown",
     "markdown_inline",

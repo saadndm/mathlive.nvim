@@ -75,6 +75,7 @@ function M:replace(new_file)
   self.file = new_file
   self.img = Image.new(new_file)
   self.img:place(self)
+  self._grid = nil
 
   if old_img ~= self.img then
     old_img:del(self.id)
