@@ -51,6 +51,22 @@ function M:send()
   end
 end
 
+---@param cb? fun(supported: boolean)
+function M:ensure_sent(cb)
+  Terminal.detect(function (supported)
+    if not supported then
+      if cb then cb(false) end
+      return
+    end
+
+    if not self.sent then
+      self:send()
+    end
+
+    if cb then cb(true) end
+  end)
+end
+
 ---@param placement mathlive.image.Placement
 function M:place(placement)
   if not placement.id then

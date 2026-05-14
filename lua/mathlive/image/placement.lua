@@ -54,7 +54,7 @@ function M:hide()
 end
 
 function M:show()
-  if not self.hidden then
+  if self.closed or not self.hidden then
     return
   end
   self.hidden = false
@@ -63,6 +63,10 @@ function M:show()
 end
 
 function M:close()
+  if self.closed then
+    return
+  end
+  self.closed = true
   self:hide()
   self.img:del(self.id)
   self.eids = {}
@@ -131,11 +135,10 @@ function M:render()
 end
 
 function M:render_when_ready()
-  Terminal.detect(function (supported)
-    if not supported then return end
-    if not self.img.sent then
-      self.img:send()
-    end
+  if self.closed or self.hidden then return end
+
+  self.img:ensure_sent(function (supported)
+    if not supported or self.closed or self.hidden then return end
     self:render()
   end)
 end
