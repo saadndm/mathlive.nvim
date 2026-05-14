@@ -6,8 +6,8 @@ local Util = require("mathlive.util")
 ---@field file       string
 ---@field mtime      uv.fs_stat.result.time
 ---@field size       mathlive.image.Size
----@field sent?      boolean                                 image data is sent
----@field placements table<number, mathlive.image.Placement> image placements
+---@field sent       boolean
+---@field placements table<number, mathlive.image.Placement>
 local M = {}
 M.__index = M
 
@@ -24,14 +24,14 @@ function M.new(file)
   end
 
   local self = setmetatable({}, M)
+  self.id = Terminal.generate_id()
   self.file = file
   self.mtime = fs_stat.mtime
   self.size = Util.dim(file)
+  self.sent = false
   self.placements = {}
 
   images[file] = self
-
-  self.id = Terminal.generate_id()
 
   return self
 end
