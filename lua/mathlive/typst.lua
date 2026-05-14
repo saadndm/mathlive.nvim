@@ -43,12 +43,8 @@ local function get_typst_input(formula)
         ]
       }
 
-      #snap-to-grid[$%s$]]=],
-    M.text_size(cell),
-    Config.color_hex,
-    cell.width * 72 / Config.ppi,
-    cell.height * 72 / Config.ppi,
-    formula
+      #snap-to-grid[$%s$]]=], M.text_size(cell), Config.color_hex, cell.width * 72 / Config.ppi,
+    cell.height * 72 / Config.ppi, formula
   )
 end
 
@@ -65,17 +61,17 @@ end
 function M.hash(formula)
   local cell_size = Util.size()
   return Util.hash(table.concat({
-    formula,
-    Config.color_hex,
-    M.text_size(cell_size),
-    tostring(Config.ppi),
-    string.format("%.4f", cell_size.width),
-    string.format("%.4f", cell_size.height),
-  }, "\n"))
+      formula,
+      Config.color_hex,
+      M.text_size(cell_size),
+      tostring(Config.ppi),
+      string.format("%.4f", cell_size.width),
+      string.format("%.4f", cell_size.height)
+    }, "\n"))
 end
 
----@param formula string
----@param hash string
+---@param formula  string
+---@param hash     string
 ---@param callback fun(obj: vim.SystemCompleted, output_path: string)
 function M.compile(formula, hash, callback)
   local output_path = State.cache_path .. hash .. ".png"
@@ -88,12 +84,22 @@ function M.compile(formula, hash, callback)
   local typst_input = get_typst_input(formula)
 
   vim.system({
-    "typst", "compile", "--format", "png", "--ppi", tostring(Config.ppi), "--pages", "1", "-", output_path,
-  }, { stdin = typst_input }, function(obj)
-    vim.schedule(function()
-      callback(obj, output_path)
+    "typst",
+    "compile",
+    "--format",
+    "png",
+    "--ppi",
+    tostring(Config.ppi),
+    "--pages",
+    "1",
+    "-",
+    output_path
+  },
+    { stdin = typst_input }, function (obj)
+      vim.schedule(function ()
+        callback(obj, output_path)
+      end)
     end)
-  end)
 end
 
 ---@param formula string
@@ -111,17 +117,22 @@ end
 ---@param callback fun()
 function M.watch(callback)
   State.typst_process = vim.system({
-    "typst", "watch", "--ppi", tostring(Config.ppi), State.cache_path .. "temp.typ", State.cache_path ..
-  "temp.png",
-  }, {
-    text = true,
-    stderr = function(err, data)
-      if err then return end
-      if data and data:find("compiled successfully") then
-        vim.schedule(callback)
+    "typst",
+    "watch",
+    "--ppi",
+    tostring(Config.ppi),
+    State.cache_path .. "temp.typ",
+    State.cache_path .. "temp.png"
+  },
+    {
+      text = true,
+      stderr = function (err, data)
+        if err then return end
+        if data and data:find("compiled successfully") then
+          vim.schedule(callback)
+        end
       end
-    end,
-  })
+    })
 end
 
 return M

@@ -11,7 +11,8 @@ local function set_cursor(row, col)
 end
 
 local function placements()
-  return child.lua_get([[
+  return child.lua_get(
+    [[
     (function()
       local State = require("mathlive.state")
       local Util = require("mathlive.util")
@@ -39,11 +40,13 @@ local function placements()
 
       return out
     end)()
-  ]])
+  ]]
+  )
 end
 
 local function stale_placement_count()
-  return child.lua_get([[
+  return child.lua_get(
+    [[
     (function()
       local State = require("mathlive.state")
       local Util = require("mathlive.util")
@@ -58,11 +61,13 @@ local function stale_placement_count()
 
       return n
     end)()
-  ]])
+  ]]
+  )
 end
 
 local function preview_state()
-  return child.lua_get([[
+  return child.lua_get(
+    [[
     (function()
       local State = require("mathlive.state")
       local Util = require("mathlive.util")
@@ -75,15 +80,17 @@ local function preview_state()
         closed = preview.p and preview.p.closed or false,
       }
     end)()
-  ]])
+  ]]
+  )
 end
 
 local T = new_set({
   hooks = {
-    pre_case = function()
+    pre_case = function ()
       child.setup()
 
-      child.lua([[
+      child.lua(
+        [[
         _G.mathlive_test = { closed_previews = 0 }
         require("mathlive.image.terminal").supported = true
 
@@ -125,68 +132,105 @@ local T = new_set({
         end
 
         require("mathlive").setup()
-      ]])
+      ]]
+      )
 
       child.bo.filetype = "markdown"
     end,
-    post_once = child.stop(),
-  },
+    post_once = child.stop()
+  }
 })
 
-T["adds inline equation"] = function()
+T["adds inline equation"] = function ()
   child.set_lines({ "prefix $x + 1$ suffix" })
 
   eq(placements(), {
-    { formula = "x + 1", formula_raw = "$x + 1$", formula_type = "inline_formula", range = { 0, 7, 0, 14 }, valid = true },
+    {
+      formula = "x + 1",
+      formula_raw = "$x + 1$",
+      formula_type = "inline_formula",
+      range = { 0, 7, 0, 14 },
+      valid = true
+    }
   })
 end
 
-T["adds displayed equation"] = function()
+T["adds displayed equation"] = function ()
   child.set_lines({ "before", "$$", "x + 1", "$$", "after" })
 
   eq(placements(), {
-    { formula = "\nx + 1\n", formula_raw = "$$\nx + 1\n$$", formula_type = "displayed_equation", range = { 1, 0, 3, 2 }, valid = true },
+    {
+      formula = "\nx + 1\n",
+      formula_raw = "$$\nx + 1\n$$",
+      formula_type = "displayed_equation",
+      range = { 1, 0, 3, 2 },
+      valid = true
+    }
   })
 end
 
-T["adds multiple inline equations on one line"] = function()
+T["adds multiple inline equations on one line"] = function ()
   child.set_lines({ "a $x$ b $y + 1$ c" })
 
   eq(placements(), {
-    { formula = "x",     formula_raw = "$x$",     formula_type = "inline_formula", range = { 0, 2, 0, 5 },  valid = true },
-    { formula = "y + 1", formula_raw = "$y + 1$", formula_type = "inline_formula", range = { 0, 8, 0, 15 }, valid = true },
+    { formula = "x", formula_raw = "$x$", formula_type = "inline_formula", range = { 0, 2, 0, 5 }, valid = true },
+    {
+      formula = "y + 1",
+      formula_raw = "$y + 1$",
+      formula_type = "inline_formula",
+      range = { 0, 8, 0, 15 },
+      valid = true
+    }
   })
 end
 
-T["adds mixed inline and displayed equations"] = function()
+T["adds mixed inline and displayed equations"] = function ()
   child.set_lines({ "top $a$", "$$", "b + c", "$$", "bottom $d$" })
 
   eq(placements(), {
-    { formula = "a",         formula_raw = "$a$",           formula_type = "inline_formula",     range = { 0, 4, 0, 7 },  valid = true },
-    { formula = "\nb + c\n", formula_raw = "$$\nb + c\n$$", formula_type = "displayed_equation", range = { 1, 0, 3, 2 },  valid = true },
-    { formula = "d",         formula_raw = "$d$",           formula_type = "inline_formula",     range = { 4, 7, 4, 10 }, valid = true },
+    { formula = "a", formula_raw = "$a$", formula_type = "inline_formula", range = { 0, 4, 0, 7 }, valid = true },
+    {
+      formula = "\nb + c\n",
+      formula_raw = "$$\nb + c\n$$",
+      formula_type = "displayed_equation",
+      range = { 1, 0, 3, 2 },
+      valid = true
+    },
+    { formula = "d", formula_raw = "$d$", formula_type = "inline_formula", range = { 4, 7, 4, 10 }, valid = true }
   })
 end
 
-T["updates inline equation text"] = function()
+T["updates inline equation text"] = function ()
   child.set_lines({ "prefix $x$ suffix" })
   child.set_lines({ "prefix $x + 1$ suffix" }, 0, 1)
 
   eq(placements(), {
-    { formula = "x + 1", formula_raw = "$x + 1$", formula_type = "inline_formula", range = { 0, 7, 0, 14 }, valid = true },
+    {
+      formula = "x + 1",
+      formula_raw = "$x + 1$",
+      formula_type = "inline_formula",
+      range = { 0, 7, 0, 14 },
+      valid = true
+    }
   })
 end
 
-T["updates displayed equation text"] = function()
+T["updates displayed equation text"] = function ()
   child.set_lines({ "$$", "x", "$$" })
   child.set_lines({ "x + 1" }, 1, 2)
 
   eq(placements(), {
-    { formula = "\nx + 1\n", formula_raw = "$$\nx + 1\n$$", formula_type = "displayed_equation", range = { 0, 0, 2, 2 }, valid = true },
+    {
+      formula = "\nx + 1\n",
+      formula_raw = "$$\nx + 1\n$$",
+      formula_type = "displayed_equation",
+      range = { 0, 0, 2, 2 },
+      valid = true
+    }
   })
 end
 
-T["removes inline equation when delimiters are deleted"] = function()
+T["removes inline equation when delimiters are deleted"] = function ()
   child.set_lines({ "prefix $x$ suffix" })
   child.set_lines({ "prefix x suffix" }, 0, 1)
 
@@ -194,7 +238,7 @@ T["removes inline equation when delimiters are deleted"] = function()
   eq(stale_placement_count(), 0)
 end
 
-T["removes displayed equation block"] = function()
+T["removes displayed equation block"] = function ()
   child.set_lines({ "before", "$$", "x", "$$", "after" })
   child.set_lines({}, 1, 4)
 
@@ -202,35 +246,41 @@ T["removes displayed equation block"] = function()
   eq(stale_placement_count(), 0)
 end
 
-T["removes only deleted equation from line"] = function()
+T["removes only deleted equation from line"] = function ()
   child.set_lines({ "$x$ and $y$" })
   child.set_lines({ "$x$ and y" }, 0, 1)
 
   eq(placements(), {
-    { formula = "x", formula_raw = "$x$", formula_type = "inline_formula", range = { 0, 0, 0, 3 }, valid = true },
+    { formula = "x", formula_raw = "$x$", formula_type = "inline_formula", range = { 0, 0, 0, 3 }, valid = true }
   })
   eq(stale_placement_count(), 0)
 end
 
-T["updates inline range after text inserted before it"] = function()
+T["updates inline range after text inserted before it"] = function ()
   child.set_lines({ "a $x$" })
   child.set_lines({ "prefix a $x$" }, 0, 1)
 
   eq(placements(), {
-    { formula = "x", formula_raw = "$x$", formula_type = "inline_formula", range = { 0, 9, 0, 12 }, valid = true },
+    { formula = "x", formula_raw = "$x$", formula_type = "inline_formula", range = { 0, 9, 0, 12 }, valid = true }
   })
 end
 
-T["updates displayed range after lines inserted before it"] = function()
+T["updates displayed range after lines inserted before it"] = function ()
   child.set_lines({ "$$", "x", "$$" })
   child.set_lines({ "one", "two" }, 0, 0)
 
   eq(placements(), {
-    { formula = "\nx\n", formula_raw = "$$\nx\n$$", formula_type = "displayed_equation", range = { 2, 0, 4, 2 }, valid = true },
+    {
+      formula = "\nx\n",
+      formula_raw = "$$\nx\n$$",
+      formula_type = "displayed_equation",
+      range = { 2, 0, 4, 2 },
+      valid = true
+    }
   })
 end
 
-T["closes inline preview when equation line is deleted"] = function()
+T["closes inline preview when equation line is deleted"] = function ()
   child.set_lines({ "before", "prefix $x$ suffix", "after" })
   set_cursor(2, 9)
   eq(preview_state().formula_type, "inline_formula")
@@ -241,7 +291,7 @@ T["closes inline preview when equation line is deleted"] = function()
   eq(preview_state(), false)
 end
 
-T["closes displayed preview when equation block is deleted"] = function()
+T["closes displayed preview when equation block is deleted"] = function ()
   child.set_lines({ "before", "$$", "x", "$$", "after" })
   set_cursor(3, 0)
   eq(preview_state().formula_type, "displayed_equation")
@@ -252,7 +302,7 @@ T["closes displayed preview when equation block is deleted"] = function()
   eq(preview_state(), false)
 end
 
-T["keeps edited preview data and closes after cursor exits"] = function()
+T["keeps edited preview data and closes after cursor exits"] = function ()
   child.set_lines({ "prefix $x$ suffix" })
   set_cursor(1, 9)
 
@@ -261,11 +311,17 @@ T["keeps edited preview data and closes after cursor exits"] = function()
 
   eq(preview_state(), false)
   eq(placements(), {
-    { formula = "x + 1", formula_raw = "$x + 1$", formula_type = "inline_formula", range = { 0, 7, 0, 14 }, valid = true },
+    {
+      formula = "x + 1",
+      formula_raw = "$x + 1$",
+      formula_type = "inline_formula",
+      range = { 0, 7, 0, 14 },
+      valid = true
+    }
   })
 end
 
-T["ignores stale preview watch callback after cursor exits"] = function()
+T["ignores stale preview watch callback after cursor exits"] = function ()
   child.set_lines({ "prefix $x$ suffix" })
   set_cursor(1, 9)
   local watch_callback = child.lua_get([[_G.mathlive_test.watch_callback ~= nil]])
@@ -279,7 +335,7 @@ T["ignores stale preview watch callback after cursor exits"] = function()
   eq(preview_state(), false)
 end
 
-T["cleans placements when buffer is wiped"] = function()
+T["cleans placements when buffer is wiped"] = function ()
   child.set_lines({ "prefix $x$ suffix" })
   local buf = child.api.nvim_get_current_buf()
   eq(#placements(), 1)

@@ -7,7 +7,7 @@ local Util = require("mathlive.util")
 ---@class mathlive.manager
 local M = {}
 
----@param buf integer
+---@param buf     integer
 ---@param extmark integer
 function M.extract_formula(buf, extmark)
   local range = Util.is_valid_extmark(buf, State.ns, extmark)
@@ -20,12 +20,12 @@ function M.extract_formula(buf, extmark)
   return Typst.clean_formula(table.concat(lines, "\n"))
 end
 
----@param buf integer
----@param extmark integer
----@param formula string
----@param formula_raw string
+---@param buf          integer
+---@param extmark      integer
+---@param formula      string
+---@param formula_raw  string
 ---@param formula_type mathlive.image.Type
----@param hash string
+---@param hash         string
 local function compile_and_place(buf, extmark, formula, formula_raw, formula_type, hash)
   State.placements[buf] = State.placements[buf] or {}
   local placements = State.placements[buf]
@@ -38,10 +38,10 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
     formula_type = formula_type,
     hash = hash,
     compiling = true,
-    failed = false,
+    failed = false
   }
 
-  Typst.compile(formula, hash, function(obj, output_path)
+  Typst.compile(formula, hash, function (obj, output_path)
     local entry = State.placements[buf] and State.placements[buf][extmark]
     if not entry or entry.hash ~= hash then return end
 
@@ -53,7 +53,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
       else
         p = Placement.new(buf, output_path, {
           extmark = extmark,
-          type = formula_type,
+          type = formula_type
         })
       end
 
@@ -64,7 +64,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
         formula_type = formula_type,
         path = output_path,
         hash = hash,
-        failed = false,
+        failed = false
       }
 
       if State.preview and State.preview.extmark == extmark and (State.preview.p or State.preview.float) then
@@ -79,10 +79,10 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
   end)
 end
 
----@param buf integer
----@param range Range4
----@param formula string
----@param formula_raw string
+---@param buf          integer
+---@param range        Range4
+---@param formula      string
+---@param formula_raw  string
 ---@param formula_type mathlive.image.Type
 function M.upsert_formula(buf, range, formula, formula_raw, formula_type)
   local sr, sc, er, ec = range[1], range[2], range[3], range[4]
@@ -94,16 +94,16 @@ function M.upsert_formula(buf, range, formula, formula_raw, formula_type)
     end_row = range[3],
     end_col = range[4],
     right_gravity = true,
-    end_right_gravity = false,
+    end_right_gravity = false
   })
 
   compile_and_place(buf, extmark, formula, formula_raw, formula_type, Typst.hash(formula))
 end
 
----@param buf integer
----@param extmark integer
----@param range Range4
----@param formula string
+---@param buf         integer
+---@param extmark     integer
+---@param range       Range4
+---@param formula     string
 ---@param formula_raw string
 function M.update_formula_data(buf, extmark, range, formula, formula_raw)
   local entry = State.placements[buf] and State.placements[buf][extmark]
@@ -114,14 +114,14 @@ function M.update_formula_data(buf, extmark, range, formula, formula_raw)
     end_row = range[3],
     end_col = range[4],
     right_gravity = true,
-    end_right_gravity = false,
+    end_right_gravity = false
   })
 
   entry.formula = formula
   entry.formula_raw = formula_raw
 end
 
----@param buf integer
+---@param buf     integer
 ---@param extmark integer
 function M.compile_formula(buf, extmark)
   local entry = State.placements[buf] and State.placements[buf][extmark]
@@ -130,7 +130,7 @@ function M.compile_formula(buf, extmark)
   compile_and_place(buf, extmark, entry.formula, entry.formula_raw, entry.formula_type, Typst.hash(entry.formula))
 end
 
----@param buf integer
+---@param buf     integer
 ---@param extmark integer
 function M.remove_formula(buf, extmark)
   local entry = State.placements[buf] and State.placements[buf][extmark]

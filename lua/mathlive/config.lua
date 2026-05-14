@@ -1,9 +1,9 @@
 ---@class mathlive.config
----@field enabled boolean
----@field filetypes string[]
----@field color_hex string
----@field ppi integer
----@field text_size string
+---@field enabled    boolean
+---@field filetypes  string[]
+---@field color_hex  string
+---@field ppi        integer
+---@field text_size  string
 ---@field text_scale number
 local M = {
   enabled = true,
@@ -11,7 +11,7 @@ local M = {
   color_hex = "",
   ppi = 300,
   text_size = "auto",
-  text_scale = 1.0,
+  text_scale = 1.0
 }
 
 local user_color_hex = nil
@@ -25,10 +25,7 @@ local function get_hl_fg(name)
 end
 
 function M.update_color()
-  M.color_hex = user_color_hex
-      or get_hl_fg("@markup.math.latex")
-      or get_hl_fg("Special")
-      or get_hl_fg("Normal")
+  M.color_hex = user_color_hex or get_hl_fg("@markup.math.latex") or get_hl_fg("Special") or get_hl_fg("Normal")
 end
 
 function M.setup(opts)
@@ -45,7 +42,7 @@ function M.setup(opts)
 
   vim.api.nvim_create_autocmd("ColorScheme", {
     group = vim.api.nvim_create_augroup("mathlive.config", { clear = true }),
-    callback = M.update_color,
+    callback = M.update_color
   })
 end
 

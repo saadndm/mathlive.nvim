@@ -6,19 +6,19 @@ local winsize_declared = false
 
 vim.api.nvim_create_autocmd("VimResized", {
   group = vim.api.nvim_create_augroup("mathlive.util", { clear = true }),
-  callback = function()
+  callback = function ()
     cell_size = nil
-  end,
+  end
 })
 
 ---@generic T
----@param fn T
----@param opts? {ms?:integer}
+---@param fn    T
+---@param opts? { ms?: integer }
 ---@return T
 function M.debounce(fn, opts)
   local timer = assert(vim.uv.new_timer())
   local ms = opts and opts.ms or 20
-  return function()
+  return function ()
     timer:start(ms, 0, vim.schedule_wrap(fn))
   end
 end
@@ -33,7 +33,8 @@ function M.size()
 
   local ffi = require("ffi")
   if not winsize_declared then
-    ffi.cdef([[
+    ffi.cdef(
+      [[
       typedef struct {
         unsigned short row;
         unsigned short col;
@@ -41,7 +42,8 @@ function M.size()
         unsigned short ypixel;
       } winsize;
       int ioctl(int, int, ...);
-    ]])
+    ]]
+    )
     winsize_declared = true
   end
 
@@ -56,16 +58,13 @@ function M.size()
     return cell_size
   end
 
-  pcall(function()
+  pcall(function ()
     local sz = ffi.new("winsize")
     if ffi.C.ioctl(1, TIOCGWINSZ, sz) ~= 0 or sz.col == 0 or sz.row == 0 or sz.xpixel == 0 or sz.ypixel == 0 then
       return
     end
 
-    cell_size = {
-      width = sz.xpixel / sz.col,
-      height = sz.ypixel / sz.row,
-    }
+    cell_size = { width = sz.xpixel / sz.col, height = sz.ypixel / sz.row }
   end)
 
   return cell_size
@@ -76,34 +75,31 @@ function M.pixels_to_cells(size)
   local cell = M.size()
   return M.norm({
     width = size.width / cell.width,
-    height = size.height / cell.height,
+    height = size.height / cell.height
   })
 end
 
----@param size {width: number, height: number}
+---@param size { width: number, height: number }
 ---@return mathlive.image.Size
 function M.norm(size)
-  return {
-    width = math.max(1, math.ceil(size.width)),
-    height = math.max(1, math.ceil(size.height)),
-  }
+  return { width = math.max(1, math.ceil(size.width)), height = math.max(1, math.ceil(size.height)) }
 end
 
----@alias mathlive.util.hl table<string, string|vim.api.keyset.highlight>
+---@alias mathlive.util.hl table<string, string | vim.api.keyset.highlight>
 
 local hl_groups = {} ---@type table<string, vim.api.keyset.highlight>
 vim.api.nvim_create_autocmd("ColorScheme", {
   group = vim.api.nvim_create_augroup("mathlive_util_hl", { clear = true }),
-  callback = function()
+  callback = function ()
     for hl_group, hl in pairs(hl_groups) do
       vim.api.nvim_set_hl(0, hl_group, hl)
     end
-  end,
+  end
 })
 
 --- Ensures the hl groups are always set, even after a colorscheme change.
 ---@param groups mathlive.util.hl
----@param opts? { prefix?:string, default?:boolean, managed?:boolean }
+---@param opts?  { prefix?: string, default?: boolean, managed?: boolean }
 function M.set_hl(groups, opts)
   opts = opts or {}
   for hl_group, hl in pairs(groups) do
@@ -142,25 +138,21 @@ function M.hash(formula)
 end
 
 ---@param buf integer
----@param ns integer
----@param sr integer
----@param sc integer
+---@param ns  integer
+---@param sr  integer
+---@param sc  integer
 ---@param er? integer
 ---@param ec? integer
 ---@return integer?
 function M.get_extmark(buf, ns, sr, sc, er, ec)
   er = er or sr
   ec = ec or sc
-  local marks = vim.api.nvim_buf_get_extmarks(
-    buf, ns,
-    { sr, sc }, { er, ec },
-    { overlap = true }
-  )
+  local marks = vim.api.nvim_buf_get_extmarks(buf, ns, { sr, sc }, { er, ec }, { overlap = true })
   return marks[1] and marks[1][1] or nil
 end
 
----@param buf integer
----@param ns integer
+---@param buf        integer
+---@param ns         integer
 ---@param extmark_id integer
 ---@return Range4?
 function M.is_valid_extmark(buf, ns, extmark_id)

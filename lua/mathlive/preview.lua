@@ -5,12 +5,12 @@ local Placement = require("mathlive.image.placement")
 ---@class mathlive.preview
 local M = {}
 
----@param float integer
+---@param float   integer
 ---@param preview mathlive.state.Preview
----@param size mathlive.image.Size
+---@param size    mathlive.image.Size
 local function position_inline_float(float, preview, size)
   -- Allow nvim to refresh screen position first
-  vim.schedule(function()
+  vim.schedule(function ()
     if State.preview ~= preview or not vim.api.nvim_win_is_valid(float) then return end
     vim.api.nvim_win_set_config(float, {
       hide = false,
@@ -18,7 +18,7 @@ local function position_inline_float(float, preview, size)
       row = vim.fn.screenrow(),
       col = vim.fn.screencol(),
       width = size.width,
-      height = size.height,
+      height = size.height
     })
   end)
 end
@@ -42,9 +42,9 @@ function M.create_float(size)
   return buf, float
 end
 
----@param buf integer
----@param extmark integer
----@param prev_preview mathlive.state.PlacementEntry|mathlive.state.Preview
+---@param buf          integer
+---@param extmark      integer
+---@param prev_preview mathlive.state.PlacementEntry | mathlive.state.Preview
 function M.create(buf, extmark, prev_preview)
   local image_path = prev_preview.path or (State.cache_path .. "temp.png")
   State.preview = { buf = buf, extmark = extmark, path = prev_preview.path or "temp.png" }
@@ -60,7 +60,7 @@ function M.create(buf, extmark, prev_preview)
     local preview_buf, float = M.create_float(size)
     State.preview.float = float
     local p = Placement.new(preview_buf, image_path, {
-      type = 'preview_inline_formula',
+      type = 'preview_inline_formula'
     })
 
     State.preview.p = p
@@ -69,7 +69,7 @@ function M.create(buf, extmark, prev_preview)
   else
     local p = Placement.new(buf, image_path, {
       type = 'preview_displayed_equation',
-      extmark = extmark,
+      extmark = extmark
     })
     State.preview.p = p
     p:render()

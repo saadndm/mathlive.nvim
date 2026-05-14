@@ -11,10 +11,10 @@ local math_query = vim.treesitter.query.parse("latex", [[
   (displayed_equation) @m
 ]])
 
----@param buf integer
+---@param buf    integer
 ---@param parser vim.treesitter.LanguageTree
----@param first integer
----@param last integer
+---@param first  integer
+---@param last   integer
 local function cleanup_range(buf, parser, first, last)
   if not State.placements[buf] then return end
 
@@ -26,7 +26,7 @@ local function cleanup_range(buf, parser, first, last)
   local current = {}
   pcall(parser.parse, parser, { start_row, end_row })
 
-  parser:for_each_tree(function(tree, ltree)
+  parser:for_each_tree(function (tree, ltree)
     if ltree:lang() ~= "latex" then return end
 
     for _, node in math_query:iter_captures(tree:root(), buf, start_row, end_row) do
@@ -43,15 +43,16 @@ local function cleanup_range(buf, parser, first, last)
   end
 end
 
----@param buf integer
+---@param buf  integer
 ---@param tree TSTree
 ---@return TSNode[]
 local function scan_tree(buf, tree)
   local changed_nodes = {}
   local map = {}
   local root_sr, root_sc, root_er, root_ec = tree:root():range()
-  local extmarks = vim.api.nvim_buf_get_extmarks(buf, State.ns, { root_sr, root_sc }, { root_er, root_ec },
-    { details = false })
+  local extmarks = vim
+    .api
+    .nvim_buf_get_extmarks(buf, State.ns, { root_sr, root_sc }, { root_er, root_ec }, { details = false })
 
   for _, mark in ipairs(extmarks) do
     local id, sr, sc = mark[1], mark[2], mark[3]
@@ -74,7 +75,7 @@ local function scan_tree(buf, tree)
   return changed_nodes
 end
 
----@param buf integer
+---@param buf       integer
 ---@param on_change fun(buf: integer, formula_nodes: TSNode[])
 function M.attach(buf, on_change)
   if attached_trees[buf] then return end
@@ -87,11 +88,11 @@ function M.attach(buf, on_change)
   main_parser:parse(true)
 
   vim.api.nvim_buf_attach(buf, false, {
-    on_lines = function(_, _, _, first, last_old, last_new)
-      vim.schedule(function()
+    on_lines = function (_, _, _, first, last_old, last_new)
+      vim.schedule(function ()
         cleanup_range(buf, main_parser, first, math.max(last_old, last_new))
       end)
-    end,
+    end
   })
 
   local function on_tree_change(_, tree)
@@ -109,13 +110,13 @@ function M.attach(buf, on_change)
   end
 
   main_parser:register_cbs({
-    on_child_added = function(ltree)
+    on_child_added = function (ltree)
       if ltree:lang() ~= "latex" then return end
       monitor_ltree(ltree)
-    end,
+    end
   }, true)
 
-  main_parser:for_each_tree(function(tree, ltree)
+  main_parser:for_each_tree(function (tree, ltree)
     if ltree:lang() == "latex" then
       monitor_ltree(ltree)
       local changed = scan_tree(buf, tree)

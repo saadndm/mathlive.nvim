@@ -2,22 +2,22 @@
 local M = {}
 
 ---@class mathlive.state.Preview
----@field buf integer
----@field extmark integer
----@field path? string
+---@field buf           integer
+---@field extmark       integer
+---@field path?         string
 ---@field formula_type? mathlive.image.Type
----@field float? integer
----@field p? mathlive.image.Placement
+---@field float?        integer
+---@field p?            mathlive.image.Placement
 
 ---@class mathlive.state.PlacementEntry
----@field placement? mathlive.image.Placement
----@field formula string
----@field formula_raw string
+---@field placement?    mathlive.image.Placement
+---@field formula       string
+---@field formula_raw   string
 ---@field formula_type? mathlive.image.Type
----@field path? string
----@field hash string
----@field compiling? boolean
----@field failed? boolean
+---@field path?         string
+---@field hash          string
+---@field compiling?    boolean
+---@field failed?       boolean
 
 M.preview = nil ---@type mathlive.state.Preview?
 M.ns = vim.api.nvim_create_namespace("mathlive")

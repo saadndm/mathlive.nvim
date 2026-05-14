@@ -4,31 +4,31 @@ local M = {}
 
 ---@class mathlive.conceal.InlineItem
 ---@field placement mathlive.image.Placement
----@field range Range4
+---@field range     Range4
 
 ---@class mathlive.conceal.Extmark
----@field id integer
----@field row integer
----@field col integer
+---@field id      integer
+---@field row     integer
+---@field col     integer
 ---@field details vim.api.keyset.extmark_details
 
 ---@class mathlive.conceal.TSSpan
 ---@field start_col integer
----@field end_col integer
----@field conceal string
+---@field end_col   integer
+---@field conceal   string
 
 ---@class mathlive.conceal.RowProjector
----@field buf integer
----@field row integer
----@field line_text string
----@field inline_items mathlive.conceal.InlineItem[]
----@field extmarks mathlive.conceal.Extmark[]
----@field ts_spans mathlive.conceal.TSSpan[]
----@field cache_key string
----@field screen_width fun(self: mathlive.conceal.RowProjector, start_col: integer, end_col: integer): integer
+---@field buf                   integer
+---@field row                   integer
+---@field line_text             string
+---@field inline_items          mathlive.conceal.InlineItem[]
+---@field extmarks              mathlive.conceal.Extmark[]
+---@field ts_spans              mathlive.conceal.TSSpan[]
+---@field cache_key             string
+---@field screen_width          fun(self: mathlive.conceal.RowProjector, start_col: integer, end_col: integer): integer
 ---@field scroll_padding_before fun(self: mathlive.conceal.RowProjector, leftcol: integer): integer
 
----@type table<string, vim.treesitter.Query|false>
+---@type table<string, vim.treesitter.Query | false>
 local ts_query_cache = {}
 local our_ns = vim.api.nvim_create_namespace("mathlive.image")
 
@@ -47,7 +47,7 @@ local function inline_virt_text_width(details)
   return width
 end
 
----@param conceal string
+---@param conceal      string
 ---@param conceallevel integer
 local function conceal_replacement_width(conceal, conceallevel)
   if conceallevel >= 3 then return 0 end
@@ -63,14 +63,14 @@ local function conceal_replacement_width(conceal, conceallevel)
   return width
 end
 
----@param extmarks mathlive.conceal.Extmark[]
----@param ts_spans mathlive.conceal.TSSpan[]
+---@param extmarks     mathlive.conceal.Extmark[]
+---@param ts_spans     mathlive.conceal.TSSpan[]
 ---@param conceallevel integer
 local function build_column_map(extmarks, ts_spans, conceallevel)
   local inline_at = {} ---@type table<integer, integer>
   local covered = {} ---@type table<integer, true?>
   local replacement_at = {} ---@type table<integer, integer>
-  local concealed = {} ---@type { id: integer, start_col: integer, end_col: integer, conceal: string }[]
+  local concealed = {} ---@type { id: integer, start_col: integer, end_col: integer, conceal: string } []
 
   for _, mark in ipairs(extmarks) do
     local d = mark.details
@@ -80,19 +80,14 @@ local function build_column_map(extmarks, ts_spans, conceallevel)
     end
 
     if d.conceal ~= nil and d.end_col and conceallevel > 0 then
-      concealed[#concealed + 1] = {
-        id = mark.id,
-        start_col = mark.col,
-        end_col = d.end_col,
-        conceal = d.conceal,
-      }
+      concealed[#concealed + 1] = { id = mark.id, start_col = mark.col, end_col = d.end_col, conceal = d.conceal }
       for col = mark.col, d.end_col - 1 do
         covered[col] = true
       end
     end
   end
 
-  table.sort(concealed, function(a, b)
+  table.sort(concealed, function (a, b)
     if a.start_col ~= b.start_col then return a.start_col < b.start_col end
     if a.id ~= b.id then return a.id > b.id end
     return a.end_col > b.end_col
@@ -131,14 +126,14 @@ local function build_column_map(extmarks, ts_spans, conceallevel)
   return inline_at, covered, replacement_at
 end
 
----@param line_text string
----@param start_col integer
----@param end_col integer
----@param inline_at table<integer, integer>
----@param covered table<integer, true?>
+---@param line_text      string
+---@param start_col      integer
+---@param end_col        integer
+---@param inline_at      table<integer, integer>
+---@param covered        table<integer, true?>
 ---@param replacement_at table<integer, integer>
----@param conceallevel integer
----@param cb fun(hidden: boolean, width: integer): boolean?
+---@param conceallevel   integer
+---@param cb             fun(hidden: boolean, width: integer): boolean?
 local function walk_gap(line_text, start_col, end_col, inline_at, covered, replacement_at, conceallevel, cb)
   local col = math.max(0, start_col)
   local stop_col = math.max(col, math.min(end_col, #line_text))
@@ -215,7 +210,7 @@ function M.collect_ts_spans(buf, row)
   end
 
   ---@param trees table<integer, TSTree>
-  ---@param lang string
+  ---@param lang  string
   local function handle_tree(trees, lang)
     local query = get_query(lang)
     if not query then return end
@@ -233,11 +228,7 @@ function M.collect_ts_spans(buf, row)
             local key = string.format("%d:%d:%d:%d:%s", sr, sc, er, ec, metadata.conceal)
             if not seen[key] then
               seen[key] = true
-              spans[#spans + 1] = {
-                start_col = s,
-                end_col = e,
-                conceal = metadata.conceal,
-              }
+              spans[#spans + 1] = { start_col = s, end_col = e, conceal = metadata.conceal }
             end
           end
         end
@@ -279,9 +270,9 @@ function M.collect_ts_spans(buf, row)
 end
 
 ---@param start_col integer
----@param end_col integer
----@param covered table<integer, true?>
----@param ts_spans mathlive.conceal.TSSpan[]
+---@param end_col   integer
+---@param covered   table<integer, true?>
+---@param ts_spans  mathlive.conceal.TSSpan[]
 function M.ts_conceal_delta(start_col, end_col, covered, ts_spans)
   local conceallevel = vim.wo.conceallevel
   if conceallevel == 0 or end_col < start_col then
@@ -318,13 +309,7 @@ function M.collect_extmarks(buf, row)
   for _, ns_id in pairs(vim.api.nvim_get_namespaces()) do
     if ns_id == our_ns then goto continue end
 
-    local extmarks = vim.api.nvim_buf_get_extmarks(
-      buf,
-      ns_id,
-      { row, 0 },
-      { row, -1 },
-      { details = true }
-    )
+    local extmarks = vim.api.nvim_buf_get_extmarks(buf, ns_id, { row, 0 }, { row, -1 }, { details = true })
 
     for _, mark in ipairs(extmarks) do
       local id, r, c, details = mark[1], mark[2], mark[3], mark[4]
@@ -338,13 +323,13 @@ function M.collect_extmarks(buf, row)
 end
 
 ---@param start_col integer
----@param end_col integer
----@param extmarks mathlive.conceal.Extmark[]
+---@param end_col   integer
+---@param extmarks  mathlive.conceal.Extmark[]
 function M.extmark_conceal_delta(start_col, end_col, extmarks)
   local covered = {} ---@type table<integer, true?>
   local conceallevel = vim.wo.conceallevel
   local inline_total = 0
-  local concealed = {} ---@type { id: integer, start_col: integer, end_col: integer, conceal: string }[]
+  local concealed = {} ---@type { id: integer, start_col: integer, end_col: integer, conceal: string } []
 
   for _, mark in ipairs(extmarks) do
     local d = mark.details
@@ -361,12 +346,7 @@ function M.extmark_conceal_delta(start_col, end_col, extmarks)
           covered[i] = true
         end
 
-        concealed[#concealed + 1] = {
-          id = mark.id,
-          start_col = mark.col,
-          end_col = e,
-          conceal = d.conceal,
-        }
+        concealed[#concealed + 1] = { id = mark.id, start_col = mark.col, end_col = e, conceal = d.conceal }
       end
     end
   end
@@ -378,7 +358,7 @@ function M.extmark_conceal_delta(start_col, end_col, extmarks)
     end
   end
 
-  table.sort(concealed, function(a, b)
+  table.sort(concealed, function (a, b)
     if a.start_col ~= b.start_col then return a.start_col < b.start_col end
     if a.id ~= b.id then return a.id > b.id end
     return a.end_col > b.end_col
@@ -399,8 +379,7 @@ function M.extmark_conceal_delta(start_col, end_col, extmarks)
     end
 
     if group_start >= start_col then
-      total_replacement = total_replacement
-          + conceal_replacement_width(winner.conceal, conceallevel)
+      total_replacement = total_replacement + conceal_replacement_width(winner.conceal, conceallevel)
     end
     i = j
   end
@@ -408,9 +387,9 @@ function M.extmark_conceal_delta(start_col, end_col, extmarks)
   return hidden_total - total_replacement - inline_total, covered
 end
 
----@param buf integer
----@param row integer
----@param line_text string
+---@param buf          integer
+---@param row          integer
+---@param line_text    string
 ---@param inline_items mathlive.conceal.InlineItem[]
 function M.build_row_projector(buf, row, line_text, inline_items)
   local projector = {
@@ -420,7 +399,7 @@ function M.build_row_projector(buf, row, line_text, inline_items)
     inline_items = inline_items,
     extmarks = M.collect_extmarks(buf, row),
     ts_spans = M.collect_ts_spans(buf, row),
-    cache_key = string.format("%d:%d", buf, row),
+    cache_key = string.format("%d:%d", buf, row)
   }
 
   function projector:screen_width(start_col, end_col)
@@ -460,7 +439,9 @@ function M.build_row_projector(buf, row, line_text, inline_items)
 
       if last_end < sc then
         local done = false
-        walk_gap(self.line_text, last_end, sc, inline_at, covered, replacement_at, conceallevel, function(hidden, width)
+        walk_gap(self.line_text, last_end, sc, inline_at, covered, replacement_at, conceallevel, function (
+          hidden, width
+        )
           done = consume(hidden, width)
           return done
         end)
@@ -501,12 +482,20 @@ function M.build_row_projector(buf, row, line_text, inline_items)
     end
 
     if last_end < #self.line_text then
-      walk_gap(self.line_text, last_end, #self.line_text, inline_at, covered, replacement_at, conceallevel,
-        function(hidden, width)
+      walk_gap(
+        self.line_text,
+        last_end,
+        #self.line_text,
+        inline_at,
+        covered,
+        replacement_at,
+        conceallevel,
+        function (hidden, width)
           if consume(hidden, width) then
             return true
           end
-        end)
+        end
+      )
     end
 
     return padding
