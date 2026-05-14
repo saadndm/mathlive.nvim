@@ -25,7 +25,7 @@ local function placements()
           out[#out + 1] = {
             formula = entry.formula,
             formula_raw = entry.formula_raw,
-            formula_type = entry.formula_type,
+            kind = entry.kind,
             range = range,
             valid = true,
           }
@@ -75,7 +75,7 @@ local function preview_state()
       if not preview then return false end
 
       return {
-        formula_type = preview.formula_type,
+        kind = preview.kind,
         range = Util.is_valid_extmark(preview.buf, State.ns, preview.extmark),
         closed = preview.p and preview.p.closed or false,
       }
@@ -105,15 +105,12 @@ local T = new_set({
 
         local Preview = require("mathlive.preview")
         Preview.create = function(buf, extmark, prev_preview)
-          local formula_type = prev_preview.formula_type
-          if not formula_type and prev_preview.placement then
-            formula_type = prev_preview.placement.opts.type
-          end
+          local kind = prev_preview.kind
 
           require("mathlive.state").preview = {
             buf = buf,
             extmark = extmark,
-            formula_type = formula_type,
+            kind = kind,
             p = {
               closed = false,
               close = function(self)
@@ -148,7 +145,7 @@ T["adds inline equation"] = function ()
     {
       formula = "x + 1",
       formula_raw = "$x + 1$",
-      formula_type = "inline_formula",
+      kind = "inline_formula",
       range = { 0, 7, 0, 14 },
       valid = true
     }
@@ -162,7 +159,7 @@ T["adds displayed equation"] = function ()
     {
       formula = "\nx + 1\n",
       formula_raw = "$$\nx + 1\n$$",
-      formula_type = "displayed_equation",
+      kind = "displayed_equation",
       range = { 1, 0, 3, 2 },
       valid = true
     }
@@ -173,11 +170,11 @@ T["adds multiple inline equations on one line"] = function ()
   child.set_lines({ "a $x$ b $y + 1$ c" })
 
   eq(placements(), {
-    { formula = "x", formula_raw = "$x$", formula_type = "inline_formula", range = { 0, 2, 0, 5 }, valid = true },
+    { formula = "x", formula_raw = "$x$", kind = "inline_formula", range = { 0, 2, 0, 5 }, valid = true },
     {
       formula = "y + 1",
       formula_raw = "$y + 1$",
-      formula_type = "inline_formula",
+      kind = "inline_formula",
       range = { 0, 8, 0, 15 },
       valid = true
     }
@@ -188,15 +185,15 @@ T["adds mixed inline and displayed equations"] = function ()
   child.set_lines({ "top $a$", "$$", "b + c", "$$", "bottom $d$" })
 
   eq(placements(), {
-    { formula = "a", formula_raw = "$a$", formula_type = "inline_formula", range = { 0, 4, 0, 7 }, valid = true },
+    { formula = "a", formula_raw = "$a$", kind = "inline_formula", range = { 0, 4, 0, 7 }, valid = true },
     {
       formula = "\nb + c\n",
       formula_raw = "$$\nb + c\n$$",
-      formula_type = "displayed_equation",
+      kind = "displayed_equation",
       range = { 1, 0, 3, 2 },
       valid = true
     },
-    { formula = "d", formula_raw = "$d$", formula_type = "inline_formula", range = { 4, 7, 4, 10 }, valid = true }
+    { formula = "d", formula_raw = "$d$", kind = "inline_formula", range = { 4, 7, 4, 10 }, valid = true }
   })
 end
 
@@ -208,7 +205,7 @@ T["updates inline equation text"] = function ()
     {
       formula = "x + 1",
       formula_raw = "$x + 1$",
-      formula_type = "inline_formula",
+      kind = "inline_formula",
       range = { 0, 7, 0, 14 },
       valid = true
     }
@@ -223,7 +220,7 @@ T["updates displayed equation text"] = function ()
     {
       formula = "\nx + 1\n",
       formula_raw = "$$\nx + 1\n$$",
-      formula_type = "displayed_equation",
+      kind = "displayed_equation",
       range = { 0, 0, 2, 2 },
       valid = true
     }
@@ -251,7 +248,7 @@ T["removes only deleted equation from line"] = function ()
   child.set_lines({ "$x$ and y" }, 0, 1)
 
   eq(placements(), {
-    { formula = "x", formula_raw = "$x$", formula_type = "inline_formula", range = { 0, 0, 0, 3 }, valid = true }
+    { formula = "x", formula_raw = "$x$", kind = "inline_formula", range = { 0, 0, 0, 3 }, valid = true }
   })
   eq(stale_placement_count(), 0)
 end
@@ -261,7 +258,7 @@ T["updates inline range after text inserted before it"] = function ()
   child.set_lines({ "prefix a $x$" }, 0, 1)
 
   eq(placements(), {
-    { formula = "x", formula_raw = "$x$", formula_type = "inline_formula", range = { 0, 9, 0, 12 }, valid = true }
+    { formula = "x", formula_raw = "$x$", kind = "inline_formula", range = { 0, 9, 0, 12 }, valid = true }
   })
 end
 
@@ -273,7 +270,7 @@ T["updates displayed range after lines inserted before it"] = function ()
     {
       formula = "\nx\n",
       formula_raw = "$$\nx\n$$",
-      formula_type = "displayed_equation",
+      kind = "displayed_equation",
       range = { 2, 0, 4, 2 },
       valid = true
     }
@@ -283,7 +280,7 @@ end
 T["closes inline preview when equation line is deleted"] = function ()
   child.set_lines({ "before", "prefix $x$ suffix", "after" })
   set_cursor(2, 9)
-  eq(preview_state().formula_type, "inline_formula")
+  eq(preview_state().kind, "inline_formula")
 
   child.set_lines({}, 1, 2)
   child.lua([[require("mathlive").handle_cursor_moved(vim.api.nvim_get_current_buf())]])
@@ -294,7 +291,7 @@ end
 T["closes displayed preview when equation block is deleted"] = function ()
   child.set_lines({ "before", "$$", "x", "$$", "after" })
   set_cursor(3, 0)
-  eq(preview_state().formula_type, "displayed_equation")
+  eq(preview_state().kind, "displayed_equation")
 
   child.set_lines({}, 1, 4)
   child.lua([[require("mathlive").handle_cursor_moved(vim.api.nvim_get_current_buf())]])
@@ -314,7 +311,7 @@ T["keeps edited preview data and closes after cursor exits"] = function ()
     {
       formula = "x + 1",
       formula_raw = "$x + 1$",
-      formula_type = "inline_formula",
+      kind = "inline_formula",
       range = { 0, 7, 0, 14 },
       valid = true
     }

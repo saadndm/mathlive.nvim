@@ -20,13 +20,13 @@ function M.extract_formula(buf, extmark)
   return Typst.clean_formula(table.concat(lines, "\n"))
 end
 
----@param buf          integer
----@param extmark      integer
----@param formula      string
----@param formula_raw  string
----@param formula_type mathlive.image.Type
----@param hash         string
-local function compile_and_place(buf, extmark, formula, formula_raw, formula_type, hash)
+---@param buf         integer
+---@param extmark     integer
+---@param formula     string
+---@param formula_raw string
+---@param kind        mathlive.image.Kind
+---@param hash        string
+local function compile_and_place(buf, extmark, formula, formula_raw, kind, hash)
   State.placements[buf] = State.placements[buf] or {}
   local placements = State.placements[buf]
   local existing = placements[extmark]
@@ -35,7 +35,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
     placement = existing and existing.placement or nil,
     formula = formula,
     formula_raw = formula_raw,
-    formula_type = formula_type,
+    kind = kind,
     hash = hash,
     compiling = true,
     failed = false
@@ -51,17 +51,14 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
         p = entry.placement
         p:replace(output_path)
       else
-        p = Placement.new(buf, output_path, {
-          extmark = extmark,
-          type = formula_type
-        })
+        p = Placement.new(buf, output_path, kind, extmark)
       end
 
       State.placements[buf][extmark] = {
         placement = p,
         formula = formula,
         formula_raw = formula_raw,
-        formula_type = formula_type,
+        kind = kind,
         path = output_path,
         hash = hash,
         failed = false
@@ -79,12 +76,12 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
   end)
 end
 
----@param buf          integer
----@param range        Range4
----@param formula      string
----@param formula_raw  string
----@param formula_type mathlive.image.Type
-function M.upsert_formula(buf, range, formula, formula_raw, formula_type)
+---@param buf         integer
+---@param range       Range4
+---@param formula     string
+---@param formula_raw string
+---@param kind        mathlive.image.Kind
+function M.upsert_formula(buf, range, formula, formula_raw, kind)
   local sr, sc, er, ec = range[1], range[2], range[3], range[4]
   local existing_extmark = Util.get_extmark(buf, State.ns, sr, sc, er, ec)
   State.placements[buf] = State.placements[buf] or {}
@@ -97,7 +94,7 @@ function M.upsert_formula(buf, range, formula, formula_raw, formula_type)
     end_right_gravity = false
   })
 
-  compile_and_place(buf, extmark, formula, formula_raw, formula_type, Typst.hash(formula))
+  compile_and_place(buf, extmark, formula, formula_raw, kind, Typst.hash(formula))
 end
 
 ---@param buf         integer
@@ -127,7 +124,7 @@ function M.compile_formula(buf, extmark)
   local entry = State.placements[buf] and State.placements[buf][extmark]
   if not entry then return end
 
-  compile_and_place(buf, extmark, entry.formula, entry.formula_raw, entry.formula_type, Typst.hash(entry.formula))
+  compile_and_place(buf, extmark, entry.formula, entry.formula_raw, entry.kind, Typst.hash(entry.formula))
 end
 
 ---@param buf     integer

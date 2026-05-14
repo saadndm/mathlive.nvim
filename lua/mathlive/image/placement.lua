@@ -5,46 +5,51 @@ local State = require("mathlive.state")
 local Util = require("mathlive.util")
 
 ---@class mathlive.image.Placement
----@field id      integer
----@field buf     integer
----@field hidden? boolean
+---@field id       integer
+---@field buf      integer
+---@field img      mathlive.Image
+---@field kind     mathlive.image.Kind
+---@field eids     integer[]
+---@field hidden   boolean
+---@field closed   boolean
+---@field extmark? integer
+---@field _grid?   string[]
 local M = {}
 M.__index = M
-
----@alias mathlive.image.Extmark vim.api.keyset.set_extmark | { row: integer, col: integer }
 
 local ns = vim.api.nvim_create_namespace("mathlive.image")
 M.ns = ns
 
----@param buf   integer
----@param src   string
----@param opts? mathlive.image.Opts
-function M.new(buf, src, opts)
+---@param buf     integer
+---@param src     string
+---@param kind    mathlive.image.Kind
+---@param extmark integer?
+function M.new(buf, src, kind, extmark)
   assert(type(buf) == "number", "`Placement.new`: buf should be a number")
   assert(type(src) == "string", "`Placement.new`: src should be a string")
   local self = setmetatable({}, M)
 
-  self.img = Image.new(src)
-  self.img:place(self)
-  self.opts = opts or {}
+  self.id = Terminal.generate_id()
   self.buf = buf
-  self.file = src
+  self.img = Image.new(src)
+  self.img.placements[self.id] = self
+  self.kind = kind
   self.eids = {}
+  self.hidden = false
+  self.closed = false
+  self.extmark = extmark
 
   return self
 end
 
----@return Range4?
 function M:get_range()
-  if not self.opts.extmark then return end
+  assert(self.extmark, "`Placement:get_range` requires valid extmark")
   if not vim.api.nvim_buf_is_valid(self.buf) then return end
-  return Util.is_valid_extmark(self.buf, State.ns, self.opts.extmark)
+  return Util.is_valid_extmark(self.buf, State.ns, self.extmark)
 end
 
 function M:hide()
-  if self.hidden then
-    return
-  end
+  if self.hidden then return end
   self.hidden = true
 
   for _, eid in ipairs(self.eids) do
@@ -54,18 +59,14 @@ function M:hide()
 end
 
 function M:show()
-  if self.closed or not self.hidden then
-    return
-  end
+  if self.closed or not self.hidden then return end
   self.hidden = false
 
   self:render_when_ready()
 end
 
 function M:close()
-  if self.closed then
-    return
-  end
+  if self.closed then return end
   self.closed = true
   self:hide()
   self.img:del(self.id)
@@ -78,7 +79,7 @@ function M:replace(new_file)
 
   self.file = new_file
   self.img = Image.new(new_file)
-  self.img:place(self)
+  self.img.placements[self.id] = self
   self._grid = nil
 
   if old_img ~= self.img then
@@ -101,7 +102,7 @@ function M:render_grid(cell_size)
   Renderer.render(self, cell_size, hl)
 end
 
----@param extmarks mathlive.image.Extmark[]
+---@param extmarks vim.api.keyset.set_extmark | { row: integer, col: integer }
 function M:_render(extmarks)
   for _, e in ipairs(extmarks) do
     e.undo_restore = false
@@ -116,7 +117,7 @@ function M:_render(extmarks)
       end
     end
   end
-  local eids = {} ---@type number[]
+  local eids = {} ---@type integer[]
   for _, extmark in ipairs(extmarks) do
     local row, col = extmark.row, extmark.col
     extmark.row, extmark.col, extmark.id = nil, nil, table.remove(self.eids, 1)

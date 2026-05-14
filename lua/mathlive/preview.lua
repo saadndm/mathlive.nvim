@@ -50,27 +50,18 @@ function M.create(buf, extmark, prev_preview)
   State.preview = { buf = buf, extmark = extmark, path = prev_preview.path or "temp.png" }
   local dim = Util.dim(image_path)
   local size = Util.pixels_to_cells(dim)
+  local kind = prev_preview.kind
 
-  local formula_type = prev_preview.formula_type
-  if not formula_type and prev_preview.placement then
-    formula_type = prev_preview.placement.opts.type
-  end
-
-  if formula_type == 'inline_formula' then
+  if kind == 'inline_formula' then
     local preview_buf, float = M.create_float(size)
     State.preview.float = float
-    local p = Placement.new(preview_buf, image_path, {
-      type = 'preview_inline_formula'
-    })
+    local p = Placement.new(preview_buf, image_path, 'preview_inline_formula', nil)
 
     State.preview.p = p
     p:render()
     position_inline_float(float, State.preview, Util.pixels_to_cells(p.img.size))
   else
-    local p = Placement.new(buf, image_path, {
-      type = 'preview_displayed_equation',
-      extmark = extmark
-    })
+    local p = Placement.new(buf, image_path, 'preview_displayed_equation', extmark)
     State.preview.p = p
     p:render()
   end
@@ -91,7 +82,7 @@ function M.update()
   p:replace(State.cache_path .. "temp.png")
   p:render()
 
-  if p.opts.type == "preview_inline_formula" then
+  if p.kind == "preview_inline_formula" then
     if preview.float then
       position_inline_float(preview.float, preview, Util.pixels_to_cells(p.img.size))
     end

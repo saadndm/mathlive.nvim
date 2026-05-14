@@ -16,7 +16,7 @@ local function each_inline_placement(buf, fn)
   if not entries then return end
   for _, entry in pairs(entries) do
     local p = entry.placement
-    if p and p.opts and p.opts.type == "inline_formula" then
+    if p and p.kind == "inline_formula" then
       local range = p:get_range()
       if range then
         fn(p, range)
@@ -34,8 +34,8 @@ end
 local function on_formula_nodes(buf, formula_nodes)
   for _, node in ipairs(formula_nodes) do
     local text = vim.treesitter.get_node_text(node, buf)
-    local formula, formula_type = Typst.clean_formula(text)
-    if formula and formula_type then
+    local formula, kind = Typst.clean_formula(text)
+    if formula and kind then
       local sr, sc, er, ec = node:range()
       local extmark = Util.get_extmark(buf, State.ns, sr, sc, er, ec)
       local is_active_preview = State.preview and State.preview.buf == buf and State.preview.extmark == extmark
@@ -67,7 +67,7 @@ local function on_formula_nodes(buf, formula_nodes)
             placement = nil,
             formula = formula,
             formula_raw = text,
-            formula_type = formula_type,
+            kind = kind,
             hash = Typst.hash(formula),
             compiling = false,
             failed = false
@@ -75,7 +75,7 @@ local function on_formula_nodes(buf, formula_nodes)
 
         Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text)
       else
-        Formula.upsert_formula(buf, { sr, sc, er, ec }, formula, text, formula_type)
+        Formula.upsert_formula(buf, { sr, sc, er, ec }, formula, text, kind)
       end
     end
   end
@@ -255,7 +255,7 @@ function M.handle_cursor_moved(buf)
       Typst.watch(Preview.update_debounced)
     else
       -- Brand new or edited formula without a matching cached image
-      State.preview = { buf = buf, extmark = cur_extmark, formula_type = entry.formula_type }
+      State.preview = { buf = buf, extmark = cur_extmark, kind = entry.kind }
       Typst.watch(function ()
         if not State.preview or State.preview.buf ~= buf or State.preview.extmark ~= cur_extmark then return end
 

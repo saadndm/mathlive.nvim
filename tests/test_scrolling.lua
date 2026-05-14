@@ -75,9 +75,9 @@ local function split_row_placements(placements)
   local inline = {}
 
   for _, placement in ipairs(placements) do
-    if placement.type == "displayed_equation" and not displayed then
+    if placement.kind == "displayed_equation" and not displayed then
       displayed = placement
-    elseif placement.type == "inline_formula" then
+    elseif placement.kind == "inline_formula" then
       inline[#inline + 1] = placement
     end
   end
@@ -127,7 +127,7 @@ local function collect_placements(target)
             local size = Util.pixels_to_cells(placement.img.size)
             placements[#placements + 1] = {
               id = placement.id,
-              type = placement.opts.type,
+              kind = placement.kind,
               range = range,
               width = size.width,
               height = size.height,

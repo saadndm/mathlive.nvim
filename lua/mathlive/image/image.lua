@@ -67,14 +67,6 @@ function M:ensure_sent(cb)
   end)
 end
 
----@param placement mathlive.image.Placement
-function M:place(placement)
-  if not placement.id then
-    placement.id = Terminal.generate_id()
-  end
-  self.placements[placement.id] = placement
-end
-
 ---@param pid integer
 function M:del(pid)
   if not self.placements[pid] then

@@ -13,7 +13,7 @@ local function is_previewed(placement)
   if not preview or not preview.extmark then
     return false
   end
-  return placement.opts and placement.opts.extmark == preview.extmark
+  return placement.extmark and placement.extmark == preview.extmark
 end
 
 local function get_win_for_buf(buf)
@@ -47,7 +47,7 @@ local function collect_inline_placements(row, entries)
 
   for extmark_id, entry in pairs(entries or {}) do
     local p = entry.placement
-    if p and p.opts.type == "inline_formula" then
+    if p and p.kind == "inline_formula" then
       local range = p:get_range()
       if not range then
         p:close()
@@ -247,8 +247,9 @@ function M.render_inline_row(buf, row, target_win)
 
       p:_render({ extmark })
     end
-    if State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float)
-      and p.opts.type == "inline_formula" and p.opts.extmark == State.preview.extmark then
+    if State.preview and State.preview.float
+      and vim.api.nvim_win_is_valid(State.preview.float) and p.kind == "inline_formula"
+      and p.extmark == State.preview.extmark then
       needs_preview_reposition = true
     end
   end
@@ -380,13 +381,8 @@ end
 ---@param size      mathlive.image.Size
 ---@param hl        string
 function M.render(placement, size, hl)
-  local formula_type = placement.opts.type
-  local strategy = formula_type and Strategies[formula_type]
-
-  if strategy then
-    placement._grid = placement._grid or generate_grid(size)
-    strategy(placement, placement._grid, hl)
-  end
+  placement._grid = placement._grid or generate_grid(size)
+  Strategies[placement.kind](placement, placement._grid, hl)
 end
 
 return M
