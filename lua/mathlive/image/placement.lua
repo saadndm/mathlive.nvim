@@ -62,7 +62,7 @@ function M:show()
   if self.closed or not self.hidden then return end
   self.hidden = false
 
-  self:render_when_ready()
+  self:render()
 end
 
 function M:close()
@@ -126,17 +126,13 @@ function M:_render(extmarks)
 end
 
 function M:render()
-  local cell_size = Util.pixels_to_cells(self.img.size)
-  Terminal.create_virtual_placement(self.img.id, self.id, cell_size.width, cell_size.height)
-  self:render_grid(cell_size)
-end
-
-function M:render_when_ready()
   if self.closed or self.hidden then return end
 
   self.img:ensure_sent(function (supported)
     if not supported or self.closed or self.hidden then return end
-    self:render()
+    local cell_size = Util.pixels_to_cells(self.img.size)
+    Terminal.create_virtual_placement(self.img.id, self.id, cell_size.width, cell_size.height)
+    self:render_grid(cell_size)
   end)
 end
 
