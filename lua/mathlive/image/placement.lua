@@ -110,11 +110,7 @@ function M:_render(extmarks)
     if self.hidden then
       e.virt_text = nil
       e.conceal = nil
-      if e.virt_lines then
-        e.virt_lines = vim.tbl_map(function (l)
-          return { { "" } }
-        end, e.virt_lines)
-      end
+      e.virt_lines = nil
     end
   end
   local eids = {} ---@type integer[]
