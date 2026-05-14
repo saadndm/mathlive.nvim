@@ -2,11 +2,11 @@ local Terminal = require("mathlive.image.terminal")
 local Util = require("mathlive.util")
 
 ---@class mathlive.Image
----@field id integer image id. unique per nvim instance and file
----@field file string
----@field mtime uv.fs_stat.result.time
----@field size mathlive.image.Size
----@field sent? boolean image data is sent
+---@field id         integer
+---@field file       string
+---@field mtime      uv.fs_stat.result.time
+---@field size       mathlive.image.Size
+---@field sent?      boolean                                 image data is sent
 ---@field placements table<number, mathlive.image.Placement> image placements
 local M = {}
 M.__index = M
@@ -40,14 +40,14 @@ end
 function M:send()
   assert(not self.sent, "Image already sent")
   self.sent = true
-  if not Terminal.env().remote then
-    Terminal.transmit_local_png(self.id, self.file)
-  else
+  if vim.env.SSH_CLIENT or vim.env.SSH_CONNECTION then
     local fd = assert(io.open(self.file, "rb"), "Failed to open file: " .. self.file)
     local data = fd:read("*a")
     fd:close()
 
     Terminal.transmit(self.id, data)
+  else
+    Terminal.transmit_local_png(self.id, self.file)
   end
 end
 
@@ -57,12 +57,6 @@ function M:place(placement)
     placement.id = Terminal.generate_id()
   end
   self.placements[placement.id] = placement
-  -- Wait for terminal detection before sending
-  Terminal.detect(function()
-    if not self.sent then
-      self:send()
-    end
-  end)
 end
 
 ---@param pid integer

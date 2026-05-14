@@ -5,13 +5,8 @@ local mock_child = helpers.new_child_neovim()
 local expect, eq = helpers.expect, helpers.expect.equality
 local new_set = MiniTest.new_set
 local SAMPLE_LINES = {
-  "prefix $1 + 2$ suffix",
-  "left $sum_(n=0)^3 n$ middle $1/(1-x)$ right",
-  "$display(sum_(n=0)^infinity) 1/2 (1/2)^n$",
-  "$vec(1, 2, 3, 4, 5)$",
-  "$$",
-  "vec(1,2,3,4,5)",
-  "$$"
+  "prefix $1 + 2$ suffix", "left $sum_(n=0)^3 n$ middle $1/(1-x)$ right", "$display(sum_(n=0)^infinity) 1/2 (1/2)^n$",
+  "$vec(1, 2, 3, 4, 5)$", "$$", "vec(1,2,3,4,5)", "$$"
 }
 
 local function set_window_options(target)
@@ -70,7 +65,7 @@ local function append_block(model, block)
       row = base + mark.row - 1,
       col = mark.col,
       end_col = mark.end_col,
-      text = mark.text,
+      text = mark.text
     }
   end
 end
@@ -114,7 +109,8 @@ local function display_line(lines, row, placement, line_index, conceallevel)
 end
 
 local function collect_placements(target)
-  return target.lua_get([[
+  return target.lua_get(
+    [[
     (function()
       local State = require("mathlive.state")
       local Util = require("mathlive.util")
@@ -149,7 +145,8 @@ local function collect_placements(target)
 
       return placements
     end)()
-  ]])
+  ]]
+  )
 end
 
 local function render_inline_block(lines, row, placements, conceallevel)
@@ -187,7 +184,7 @@ local function render_inline_block(lines, row, placements, conceallevel)
         row = k,
         col = col,
         end_col = col + #visible_formula,
-        text = placement.grid[k] or pad_cells(placement.width),
+        text = placement.grid[k] or pad_cells(placement.width)
       }
 
       col = col + #visible_formula
@@ -218,7 +215,7 @@ local function render_display_block(lines, row, placement, conceallevel)
       row = k,
       col = (source_index == sr) and sc or 0,
       end_col = (source_index <= er) and ((source_index == er) and ec or line_len) or line_len,
-      text = placement.grid[k] or pad_cells(placement.width),
+      text = placement.grid[k] or pad_cells(placement.width)
     }
   end
 
@@ -234,7 +231,7 @@ local function build_mock_model(source_lines, placements, conceallevel)
   end
 
   for _, row_placements in pairs(by_start_row) do
-    table.sort(row_placements, function(a, b)
+    table.sort(row_placements, function (a, b)
       if a.range[2] ~= b.range[2] then return a.range[2] < b.range[2] end
       return a.id < b.id
     end)
@@ -292,7 +289,8 @@ end
 
 local function apply_mock(target, model)
   target.set_lines(model.lines)
-  target.lua([[
+  target.lua(
+    [[
     local marks = ...
     local buf = vim.api.nvim_get_current_buf()
     local ns = vim.api.nvim_create_namespace("test")
@@ -311,7 +309,8 @@ local function apply_mock(target, model)
         strict = false,
       })
     end
-  ]], { model.extmarks })
+  ]], { model.extmarks }
+  )
 end
 
 local function screenshot_text(target)
@@ -321,26 +320,28 @@ end
 local T = new_set({
   parametrize = { { 0 }, { 1 }, { 2 }, { 3 } },
   hooks = {
-    pre_case = function()
+    pre_case = function ()
       child.setup()
       mock_child.setup()
 
-      child.lua([[
-        vim.env.MATHLIVE_GHOSTTY = "1"
+      child.lua(
+        [[
+        require("mathlive.image.terminal").supported = true
         require("mathlive").setup()
-      ]])
+      ]]
+      )
 
       set_window_options(child)
       set_window_options(mock_child)
     end,
-    post_once = function()
+    post_once = function ()
       child.stop()
       mock_child.stop()
-    end,
-  },
+    end
+  }
 })
 
-T["scrolling"] = function(conceallevel)
+T["scrolling"] = function (conceallevel)
   set_conceallevel(conceallevel)
   child.set_lines(SAMPLE_LINES)
 

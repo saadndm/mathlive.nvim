@@ -85,6 +85,7 @@ local T = new_set({
 
       child.lua([[
         _G.mathlive_test = { closed_previews = 0 }
+        require("mathlive.image.terminal").supported = true
 
         local Typst = require("mathlive.typst")
         Typst.compile = function(_, _, callback)

@@ -5,19 +5,19 @@ local State = require("mathlive.state")
 local Util = require("mathlive.util")
 
 ---@class mathlive.image.Placement
----@field id integer
----@field buf integer
+---@field id      integer
+---@field buf     integer
 ---@field hidden? boolean
 local M = {}
 M.__index = M
 
----@alias mathlive.image.Extmark vim.api.keyset.set_extmark|{row:integer, col:integer}
+---@alias mathlive.image.Extmark vim.api.keyset.set_extmark | { row: integer, col: integer }
 
 local ns = vim.api.nvim_create_namespace("mathlive.image")
 M.ns = ns
 
----@param buf integer
----@param src string
+---@param buf   integer
+---@param src   string
 ---@param opts? mathlive.image.Opts
 function M.new(buf, src, opts)
   assert(type(buf) == "number", "`Placement.new`: buf should be a number")
@@ -59,7 +59,7 @@ function M:show()
   end
   self.hidden = false
 
-  self:render()
+  self:render_when_ready()
 end
 
 function M:close()
@@ -89,8 +89,8 @@ function M:render_grid(cell_size)
     [hl] = {
       fg = self.img.id,
       sp = self.id,
-      nocombine = true,
-    },
+      nocombine = true
+    }
   })
 
   Renderer.render(self, cell_size, hl)
@@ -105,7 +105,7 @@ function M:_render(extmarks)
       e.virt_text = nil
       e.conceal = nil
       if e.virt_lines then
-        e.virt_lines = vim.tbl_map(function(l)
+        e.virt_lines = vim.tbl_map(function (l)
           return { { "" } }
         end, e.virt_lines)
       end
@@ -127,6 +127,16 @@ function M:render()
   local cell_size = Util.pixels_to_cells(self.img.size)
   Terminal.create_virtual_placement(self.img.id, self.id, cell_size.width, cell_size.height)
   self:render_grid(cell_size)
+end
+
+function M:render_when_ready()
+  Terminal.detect(function (supported)
+    if not supported then return end
+    if not self.img.sent then
+      self.img:send()
+    end
+    self:render()
+  end)
 end
 
 return M

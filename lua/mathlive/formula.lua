@@ -70,7 +70,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, formula_typ
       if State.preview and State.preview.extmark == extmark and (State.preview.p or State.preview.float) then
         p:hide()
       else
-        p:render()
+        p:render_when_ready()
       end
     else
       entry.compiling = false
