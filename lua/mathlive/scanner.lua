@@ -1,5 +1,6 @@
 local Formula = require("mathlive.formula")
 local State = require("mathlive.state")
+local Util = require("mathlive.util")
 
 ---@class mathlive.scanner
 local M = {}
@@ -80,7 +81,7 @@ end
 function M.attach(buf, on_change)
   if attached_trees[buf] then return end
 
-  State.placements[buf] = State.placements[buf] or {}
+  Util.ensure_table(State.placements, buf)
   attached_trees[buf] = {}
 
   local main_parser = vim.treesitter.get_parser(buf)

@@ -7,7 +7,7 @@ local M = {}
 
 ---@param formula string
 ---@return string?
----@return mathlive.image.Type?
+---@return mathlive.image.Kind?
 function M.clean_formula(formula)
   local display_content = formula:match("^%$%$(.*)%$%$$")
   if display_content then

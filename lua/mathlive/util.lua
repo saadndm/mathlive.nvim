@@ -1,6 +1,18 @@
 ---@class mathlive.util
 local M = {}
 
+---@param t   table
+---@param key any
+---@return table
+function M.ensure_table(t, key)
+  local child = t[key]
+  if not child then
+    child = {}
+    t[key] = child
+  end
+  return child
+end
+
 local cell_size ---@type mathlive.image.Size?
 local winsize_declared = false
 

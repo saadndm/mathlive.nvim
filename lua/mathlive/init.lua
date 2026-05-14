@@ -11,20 +11,6 @@ local Util = require("mathlive.util")
 ---@class mathlive
 local M = {}
 
-local function each_inline_placement(buf, fn)
-  local entries = State.placements[buf]
-  if not entries then return end
-  for _, entry in pairs(entries) do
-    local p = entry.placement
-    if p and p.kind == "inline_formula" then
-      local range = p:get_range()
-      if range then
-        fn(p, range)
-      end
-    end
-  end
-end
-
 local function should_render_buf(buf)
   if not vim.api.nvim_buf_is_valid(buf) then return false end
   if vim.bo[buf].buftype ~= "" then return false end
@@ -61,8 +47,8 @@ local function on_formula_nodes(buf, formula_nodes)
           })
         end
 
-        State.placements[buf] = State.placements[buf] or {}
-        State.placements[buf][extmark] = State.placements[buf][extmark]
+        local placements = Util.ensure_table(State.placements, buf)
+        placements[extmark] = placements[extmark]
           or {
             placement = nil,
             formula = formula,
@@ -109,13 +95,18 @@ function M.setup_autocmds()
         return false
       end
 
+      local rows_by_buf = State.multiline_inline_rows[buf]
+      if not rows_by_buf then
+        provider_rows_by_win[win] = nil
+        return false
+      end
+
       local rows = {}
-      each_inline_placement(buf, function (_, range)
-        local row = range[1]
-        if row >= top and row < bot then
+      for row = top, bot - 1 do
+        if rows_by_buf[row] then
           rows[row] = true
         end
-      end)
+      end
 
       provider_rows_by_win[win] = rows
       return next(rows) ~= nil
@@ -125,7 +116,10 @@ function M.setup_autocmds()
       if not rows or not rows[row] then
         return
       end
-      Renderer.render_inline_row(buf, row, win)
+
+      local row_items = State.multiline_inline_rows[buf] and State.multiline_inline_rows[buf][row]
+      if not row_items then return end
+      Renderer.render_multiline_inline_row(buf, row, win, row_items)
     end,
     on_end = function ()
       provider_rows_by_win = {}

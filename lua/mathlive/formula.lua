@@ -27,8 +27,7 @@ end
 ---@param kind        mathlive.image.Kind
 ---@param hash        string
 local function compile_and_place(buf, extmark, formula, formula_raw, kind, hash)
-  State.placements[buf] = State.placements[buf] or {}
-  local placements = State.placements[buf]
+  local placements = Util.ensure_table(State.placements, buf)
   local existing = placements[extmark]
 
   placements[extmark] = {
@@ -84,7 +83,7 @@ end
 function M.upsert_formula(buf, range, formula, formula_raw, kind)
   local sr, sc, er, ec = range[1], range[2], range[3], range[4]
   local existing_extmark = Util.get_extmark(buf, State.ns, sr, sc, er, ec)
-  State.placements[buf] = State.placements[buf] or {}
+  Util.ensure_table(State.placements, buf)
 
   local extmark = vim.api.nvim_buf_set_extmark(buf, State.ns, range[1], range[2], {
     id = existing_extmark,
@@ -150,13 +149,15 @@ end
 
 ---@param buf integer
 function M.cleanup_buffer(buf)
-  if not State.placements[buf] then return end
+  if State.placements[buf] then
+    for extmark_id, _ in pairs(State.placements[buf]) do
+      M.remove_formula(buf, extmark_id)
+    end
 
-  for extmark_id, _ in pairs(State.placements[buf]) do
-    M.remove_formula(buf, extmark_id)
+    State.placements[buf] = nil
   end
 
-  State.placements[buf] = nil
+  State.multiline_inline_rows[buf] = nil
 end
 
 return M

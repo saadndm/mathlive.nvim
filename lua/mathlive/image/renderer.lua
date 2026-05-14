@@ -42,29 +42,6 @@ local function slice_text(line, start_col, end_col)
   return line:sub(start_col + 1, end_col)
 end
 
-local function collect_inline_placements(row, entries)
-  local placements = {}
-
-  for extmark_id, entry in pairs(entries or {}) do
-    local p = entry.placement
-    if p and p.kind == "inline_formula" then
-      local range = p:get_range()
-      if not range then
-        p:close()
-        entries[extmark_id] = nil
-      elseif range[1] == row then
-        placements[#placements + 1] = { placement = p, range = range }
-      end
-    end
-  end
-
-  table.sort(placements, function (a, b)
-    return a.range[2] < b.range[2]
-  end)
-
-  return placements
-end
-
 local function filter_visible_placements(placements)
   local visible = {}
   for _, item in ipairs(placements) do
@@ -189,18 +166,75 @@ local function compute_layout(state)
   return { virt_lines = virt_lines, anchor = anchor }
 end
 
+---@param placement mathlive.image.Placement
+function M.index_multiline_inline(placement)
+  if placement.kind ~= "inline_formula" or not placement._grid or #placement._grid <= 1 then return end
+
+  local range = placement:get_range()
+  if not range then return end
+
+  M.unindex_multiline_inline(placement)
+
+  local by_buf = Util.ensure_table(State.multiline_inline_rows, placement.buf)
+  local by_row = Util.ensure_table(by_buf, range[1])
+
+  by_row[placement.id] = { placement = placement, range = range }
+  placement._multiline_inline_row = range[1]
+end
+
+---@param placement mathlive.image.Placement
+function M.unindex_multiline_inline(placement)
+  local by_buf = State.multiline_inline_rows[placement.buf]
+  if not by_buf then return end
+
+  local row = placement._multiline_inline_row
+  local by_id = row and by_buf[row]
+
+  if by_id then
+    by_id[placement.id] = nil
+    if not next(by_id) then
+      by_buf[row] = nil
+    end
+  end
+
+  placement._multiline_inline_row = nil
+
+  if not next(by_buf) then
+    State.multiline_inline_rows[placement.buf] = nil
+  end
+end
+
 ---@param buf         integer
 ---@param row         integer
 ---@param target_win? integer
-function M.render_inline_row(buf, row, target_win)
-  local entries = State.placements[buf]
-  if not entries then return end
+---@param row_items?  table<integer, { placement: mathlive.image.Placement, range: Range4 }>
+function M.render_multiline_inline_row(buf, row, target_win, row_items)
+  row_items = row_items or (State.multiline_inline_rows[buf] and State.multiline_inline_rows[buf][row])
+  if not row_items then return end
 
   local line_text = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1] or ""
-  local placements = collect_inline_placements(row, entries)
-  if #placements == 0 then
-    return
+  local placements = {}
+
+  for id, item in pairs(row_items) do
+    local p = item.placement
+    local range = p:get_range()
+
+    if not range then
+      M.unindex_multiline_inline(p)
+      row_items[id] = nil
+    elseif range[1] == row then
+      item.range = range
+      placements[#placements + 1] = item
+    else
+      M.index_multiline_inline(p)
+    end
   end
+
+  if #placements == 0 then return end
+
+  table.sort(placements, function (a, b)
+    return a.range[2] < b.range[2]
+  end)
 
   local visible = filter_visible_placements(placements)
   local win = resolve_target_win(buf, target_win)
@@ -355,11 +389,28 @@ end
 ---@param grid      string[]
 function Strategies.inline_formula(placement, grid)
   placement._grid = grid
+  M.index_multiline_inline(placement)
 
   local range = placement:get_range()
   if not range then return end
 
-  M.render_inline_row(placement.buf, range[1])
+  if #grid > 1 then
+    M.render_multiline_inline_row(placement.buf, range[1])
+    return
+  end
+
+  placement:_render({
+    {
+      row = range[1],
+      col = range[2],
+      end_row = range[3],
+      end_col = range[4],
+      virt_text_pos = "inline",
+      virt_text_hide = true,
+      conceal = "",
+      virt_text = { { grid[1], "MathLiveImage" .. placement.id } }
+    }
+  })
 end
 
 ---@param placement mathlive.image.Placement

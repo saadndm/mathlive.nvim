@@ -5,15 +5,16 @@ local State = require("mathlive.state")
 local Util = require("mathlive.util")
 
 ---@class mathlive.image.Placement
----@field id       integer
----@field buf      integer
----@field img      mathlive.Image
----@field kind     mathlive.image.Kind
----@field eids     integer[]
----@field hidden   boolean
----@field closed   boolean
----@field extmark? integer
----@field _grid?   string[]
+---@field id                     integer
+---@field buf                    integer
+---@field img                    mathlive.Image
+---@field kind                   mathlive.image.Kind
+---@field eids                   integer[]
+---@field hidden                 boolean
+---@field closed                 boolean
+---@field extmark?               integer
+---@field _grid?                 string[]
+---@field _multiline_inline_row? integer
 local M = {}
 M.__index = M
 
@@ -52,6 +53,8 @@ function M:hide()
   if self.hidden then return end
   self.hidden = true
 
+  Renderer.unindex_multiline_inline(self)
+
   for _, eid in ipairs(self.eids) do
     vim.api.nvim_buf_del_extmark(self.buf, ns, eid)
   end
@@ -76,6 +79,8 @@ end
 ---@param new_file string
 function M:replace(new_file)
   local old_img = self.img
+
+  Renderer.unindex_multiline_inline(self)
 
   self.file = new_file
   self.img = Image.new(new_file)
@@ -102,7 +107,7 @@ function M:render_grid(cell_size)
   Renderer.render(self, cell_size, hl)
 end
 
----@param extmarks vim.api.keyset.set_extmark | { row: integer, col: integer }
+---@param extmarks mathlive.image.ExtmarkSpec[]
 function M:_render(extmarks)
   for _, e in ipairs(extmarks) do
     e.undo_restore = false

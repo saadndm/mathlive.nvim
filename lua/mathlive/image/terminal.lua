@@ -33,34 +33,21 @@ function M.detect(cb)
   end
 
   if vim.env.TMUX then
-    local ok, out = pcall(vim.fn.system, { "tmux", "display-message", "-p", "#{client_termname}" })
+    vim.system({ "tmux", "display-message", "-p", "#{client_termname}" }, { text = true }, function (obj)
+      local supported = obj.code == 0 and is_supported((obj.stdout or ""):lower())
+      if supported then
+        vim.system({ "tmux", "set", "-p", "allow-passthrough", "all" })
+      end
 
-    if ok and is_supported(out) then
-      pcall(vim.fn.system, { "tmux", "set", "-p", "allow-passthrough", "all" })
-      return finish(true)
-    else
-      return finish(false)
-    end
+      vim.schedule(function ()
+        finish(supported)
+      end)
+    end)
+    return
   end
 
-  local done = false
-  local id = vim.api.nvim_create_autocmd("TermResponse", {
-    once = true,
-    callback = function (ev)
-      done = true
-      finish(is_supported(ev.data.sequence))
-      return true
-    end
-  })
-
-  vim.defer_fn(function ()
-    if done then return end
-    done = true
-    pcall(vim.api.nvim_del_autocmd, id)
-    finish(false)
-  end, 100)
-
-  vim.api.nvim_ui_send("\027[>q")
+  local term = table.concat({ vim.env.TERM or "", vim.env.TERM_PROGRAM or "" }, " "):lower()
+  finish(is_supported(term))
 end
 
 function M.write(data)
