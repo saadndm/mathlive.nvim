@@ -168,6 +168,15 @@ function M.setup_autocmds()
     end
   })
 
+  vim.api.nvim_create_autocmd("WinScrolled", {
+    group = group,
+    callback = function ()
+      if not State.preview or State.preview.buf ~= vim.api.nvim_get_current_buf() then return end
+
+      M.handle_cursor_moved(State.preview.buf)
+    end
+  })
+
   vim.api.nvim_create_autocmd("BufLeave", {
     group = group,
     callback = function ()
