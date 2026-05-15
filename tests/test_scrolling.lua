@@ -5,8 +5,8 @@ local mock_child = helpers.new_child_neovim()
 local expect, eq = helpers.expect, helpers.expect.equality
 local new_set = MiniTest.new_set
 local SAMPLE_LINES = {
-  "prefix $1 + 2$ suffix", "left $sum_(n=0)^3 n$ middle $1/(1-x)$ right", "$display(sum_(n=0)^infinity) 1/2 (1/2)^n$",
-  "$vec(1, 2, 3, 4, 5)$", "$$", "vec(1,2,3,4,5)", "$$"
+  "prefix $1 + 2$ suffix", "$infinity$ $sum_(n=0)^3 n$ middle $1/(1-x)$ right",
+  "$display(sum_(n=0)^infinity) 1/2 (1/2)^n$", "$vec(1, 2, 3, 4, 5)$", "$$", "vec(1,2,3,4,5)", "$$"
 }
 
 local function set_window_options(target)
@@ -95,6 +95,21 @@ local function row_count(placements)
   return count
 end
 
+local function split_inline_by_height(placements)
+  local single = {}
+  local multiline = {}
+
+  for _, placement in ipairs(placements) do
+    if placement.height > 1 then
+      multiline[#multiline + 1] = placement
+    else
+      single[#single + 1] = placement
+    end
+  end
+
+  return single, multiline
+end
+
 local function display_line(lines, row, placement, line_index, conceallevel)
   local sc, ec = placement.range[2], placement.range[4]
   local line = lines[line_index + 1]
@@ -149,11 +164,38 @@ local function collect_placements(target)
   )
 end
 
-local function render_inline_block(lines, row, placements, conceallevel)
+local function projected_width(line, start_col, end_col, single_inline, conceallevel)
+  local width = display_width(slice_text(line, start_col, end_col))
+
+  for _, placement in ipairs(single_inline or {}) do
+    local sc, ec = placement.range[2], placement.range[4]
+    if start_col <= sc and ec <= end_col then
+      local replacement = display_width(placement.grid[1] or pad_cells(placement.width))
+      if conceallevel == 0 then
+        width = width + replacement
+      else
+        width = width - (ec - sc) + replacement
+      end
+    end
+  end
+
+  return width
+end
+
+local function render_inline_block(lines, row, placements, single_inline, conceallevel)
   local source_line = lines[row + 1] or ""
   local height = row_count(placements)
 
   local block = { lines = {}, extmarks = {} }
+
+  for _, placement in ipairs(single_inline or {}) do
+    block.extmarks[#block.extmarks + 1] = {
+      row = 1,
+      col = placement.range[2],
+      end_col = placement.range[4],
+      text = placement.grid[1] or pad_cells(placement.width)
+    }
+  end
 
   for k = 1, height do
     local parts = {}
@@ -163,7 +205,7 @@ local function render_inline_block(lines, row, placements, conceallevel)
     for _, placement in ipairs(placements) do
       local sc, ec = placement.range[2], placement.range[4]
       local gap = slice_text(source_line, cursor, sc)
-      local gap_width = display_width(gap)
+      local gap_width = projected_width(source_line, cursor, sc, single_inline, conceallevel)
       local visible_gap = (k == 1) and gap or pad_cells(gap_width)
       parts[#parts + 1] = visible_gap
       col = col + #visible_gap
@@ -192,7 +234,7 @@ local function render_inline_block(lines, row, placements, conceallevel)
     end
 
     local tail = slice_text(source_line, cursor, #source_line)
-    local tail_width = display_width(tail)
+    local tail_width = projected_width(source_line, cursor, #source_line, single_inline, conceallevel)
     parts[#parts + 1] = (k == 1) and tail or pad_cells(tail_width)
     block.lines[k] = table.concat(parts)
   end
@@ -248,7 +290,21 @@ local function build_mock_model(source_lines, placements, conceallevel)
       append_block(model, render_display_block(source_lines, row, displayed, conceallevel))
       row = displayed.range[3] + 1
     elseif #inline > 0 then
-      append_block(model, render_inline_block(source_lines, row, inline, conceallevel))
+      local single_inline, multiline_inline = split_inline_by_height(inline)
+      if #multiline_inline > 0 then
+        append_block(model, render_inline_block(source_lines, row, multiline_inline, single_inline, conceallevel))
+      else
+        local block = { lines = { source_lines[row + 1] }, extmarks = {} }
+        for _, placement in ipairs(single_inline) do
+          block.extmarks[#block.extmarks + 1] = {
+            row = 1,
+            col = placement.range[2],
+            end_col = placement.range[4],
+            text = placement.grid[1] or pad_cells(placement.width)
+          }
+        end
+        append_block(model, block)
+      end
       row = row + 1
     else
       model.lines[#model.lines + 1] = source_lines[row + 1]
@@ -343,24 +399,26 @@ local T = new_set({
 
 T["scrolling"] = function (conceallevel)
   set_conceallevel(conceallevel)
-  child.set_lines(SAMPLE_LINES)
+  local input_lines = { "" }
+  vim.list_extend(input_lines, SAMPLE_LINES)
+  child.set_lines(input_lines)
 
   child.lua([[vim.wait(500)]])
 
   local placements = collect_placements(child)
-  local base_model = build_mock_model(SAMPLE_LINES, placements, conceallevel)
-  local source_lines = vim.deepcopy(SAMPLE_LINES)
+  local base_model = build_mock_model(input_lines, placements, conceallevel)
+  local source_lines = vim.deepcopy(input_lines)
   source_lines[#source_lines + 1] = string.rep(" ", trail_width(base_model, conceallevel, child.o.columns))
 
   child.set_lines(source_lines)
-  child.set_cursor(#source_lines, 0)
+  child.set_cursor(1, 0)
   child.lua([[vim.wait(500)]])
 
   placements = collect_placements(child)
   local model = build_mock_model(source_lines, placements, conceallevel)
 
   apply_mock(mock_child, model)
-  mock_child.set_cursor(#model.lines, 0)
+  mock_child.set_cursor(1, 0)
 
   eq(screenshot_text(child), screenshot_text(mock_child))
 
