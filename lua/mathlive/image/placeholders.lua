@@ -44,4 +44,23 @@ end
 ---@type string
 M.placeholder = vim.fn.nr2char(0x10EEEE, true)
 
+---@param size mathlive.image.Size
+---@return string[]
+function M.grid(size)
+  local img = {} ---@type string[]
+  local height = math.min(#M.diacritics, size.height)
+  local width = math.min(#M.diacritics, size.width)
+
+  for r = 1, height do
+    local line = {} ---@type string[]
+    for c = 1, width do
+      line[#line + 1] = M.placeholder
+      line[#line + 1] = M.diacritics[r]
+      line[#line + 1] = M.diacritics[c]
+    end
+    img[#img + 1] = table.concat(line)
+  end
+  return img
+end
+
 return M
