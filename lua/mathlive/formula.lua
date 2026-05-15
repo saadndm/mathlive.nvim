@@ -65,6 +65,8 @@ local function compile_and_place(buf, extmark, formula, formula_raw, kind, hash)
 
       if State.preview and State.preview.extmark == extmark and (State.preview.p or State.preview.float) then
         p:hide()
+      elseif p.hidden then
+        p:show()
       else
         p:render()
       end

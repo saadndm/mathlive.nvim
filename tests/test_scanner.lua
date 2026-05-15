@@ -318,6 +318,51 @@ T["keeps edited preview data and closes after cursor exits"] = function ()
   })
 end
 
+T["shows existing placement after edited preview compiles"] = function ()
+  child.set_lines({ "prefix $x$ suffix" })
+
+  child.lua(
+    [[
+    local State = require("mathlive.state")
+    local Typst = require("mathlive.typst")
+    local buf = vim.api.nvim_get_current_buf()
+    local extmark = next(State.placements[buf])
+
+    State.placements[buf][extmark].placement = {
+      hidden = true,
+      hide = function(self) self.hidden = true end,
+      show = function(self) self.hidden = false; self.rendered = true end,
+      render = function(self) self.rendered = true end,
+      replace = function(self, path) self.path = path end,
+    }
+    State.placements[buf][extmark].formula = "x + 1"
+    State.placements[buf][extmark].formula_raw = "$x + 1$"
+    State.placements[buf][extmark].path = "old.png"
+    State.placements[buf][extmark].hash = Typst.hash("x")
+
+    Typst.compile = function(_, _, callback)
+      callback({ code = 0, signal = 0 }, "test.png")
+    end
+
+    require("mathlive.formula").compile_formula(buf, extmark)
+  ]]
+  )
+
+  eq(
+    child.lua_get(
+      [[
+      (function()
+        local State = require("mathlive.state")
+        local buf = vim.api.nvim_get_current_buf()
+        local extmark = next(State.placements[buf])
+        local p = State.placements[buf][extmark].placement
+        return { hidden = p.hidden, rendered = p.rendered, path = p.path }
+      end)()
+    ]]
+    ), { hidden = false, rendered = true, path = "test.png" }
+  )
+end
+
 T["ignores stale preview watch callback after cursor exits"] = function ()
   child.set_lines({ "prefix $x$ suffix" })
   set_cursor(1, 9)
