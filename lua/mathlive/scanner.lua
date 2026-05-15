@@ -69,7 +69,7 @@ local function scan_tree(buf, tree)
     local id = map[sr .. ":" .. sc]
 
     local p = id and State.placements[buf] and State.placements[buf][id]
-    if not p or p.formula_raw ~= text then
+    if not p or p.formula_raw ~= text or (p.placement and p.placement.hidden) then
       table.insert(changed_nodes, node)
     end
     ::continue::
