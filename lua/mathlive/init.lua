@@ -222,6 +222,15 @@ function M.handle_cursor_moved(buf)
   local prev_extmark = State.preview and State.preview.extmark
   local cur_extmark = Util.get_extmark(buf, State.ns, row - 1, col)
 
+  -- Cleanup is scheduled, so cursor handling can see stale extmarks after edits.
+  if cur_extmark then
+    local formula = Formula.extract_formula(buf, cur_extmark)
+    if not formula then
+      Formula.remove_formula(buf, cur_extmark)
+      cur_extmark = nil
+    end
+  end
+
   -- Deleted formula
   if prev_extmark and not Util.is_valid_extmark(buf, State.ns, prev_extmark) then
     Preview.close_preview()
