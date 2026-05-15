@@ -22,6 +22,8 @@ local function cleanup_range(buf, parser, first, last)
   local start_row = math.max(first - 1, 0)
   local end_row = math.min(last + 1, vim.api.nvim_buf_line_count(buf))
   local extmarks = vim.api.nvim_buf_get_extmarks(buf, State.ns, { start_row, 0 }, { end_row, 0 }, { details = false })
+  -- Extmark end positions include boundary rows, but tree-sitter query end rows do not.
+  end_row = math.min(end_row + 1, vim.api.nvim_buf_line_count(buf))
   if #extmarks == 0 then return end
 
   local current = {}
