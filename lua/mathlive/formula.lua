@@ -145,7 +145,7 @@ function M.remove_formula(buf, extmark)
   end
 
   if vim.api.nvim_buf_is_valid(buf) then
-    pcall(vim.api.nvim_buf_del_extmark, buf, State.ns, extmark)
+    vim.api.nvim_buf_del_extmark(buf, State.ns, extmark)
   end
 end
 

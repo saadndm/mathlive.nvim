@@ -6,12 +6,27 @@ local Util = require("mathlive.util")
 ---@class mathlive.image.renderer
 local M = {}
 
+---@alias mathlive.image.RowPlacement { placement: mathlive.image.Placement, range: Range4 }
+---@alias mathlive.image.Position { start_col: integer, width: integer }
+
+---@class mathlive.image.renderer.LayoutState
+---@field buf       integer
+---@field row       integer
+---@field line_text string
+---@field visible   mathlive.image.RowPlacement[]
+---@field win?      integer
+
+---@class mathlive.image.renderer.Layout
+---@field virt_lines? table
+---@field anchor?     mathlive.image.Placement
+
 ---@param placement mathlive.image.Placement
 local function is_suppressed_by_preview(placement)
   local preview = State.preview
   return preview and preview.extmark and placement.extmark and placement.extmark == preview.extmark
 end
 
+---@param buf integer
 local function get_win_for_buf(buf)
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     if vim.api.nvim_win_get_buf(win) == buf then
@@ -21,6 +36,9 @@ local function get_win_for_buf(buf)
   return nil
 end
 
+---@param line      string
+---@param start_col integer
+---@param end_col   integer
 local function slice_text(line, start_col, end_col)
   if end_col < start_col then
     return ""
@@ -28,9 +46,9 @@ local function slice_text(line, start_col, end_col)
   return line:sub(start_col + 1, end_col)
 end
 
----@param placements { placement: mathlive.image.Placement, range: Range4 } []
+---@param placements mathlive.image.RowPlacement[]
 local function filter_visible_placements(placements)
-  local visible = {}
+  local visible = {} ---@type mathlive.image.RowPlacement[]
   for _, item in ipairs(placements) do
     local p = item.placement
     if not p.hidden and p._grid and not is_suppressed_by_preview(p) then
@@ -40,6 +58,22 @@ local function filter_visible_placements(placements)
   return visible
 end
 
+---@param placements mathlive.image.RowPlacement[]
+local function filter_multiline_placements(placements)
+  local multiline = {} ---@type mathlive.image.RowPlacement[]
+  for _, item in ipairs(placements) do
+    local p = item.placement
+    if p._grid and #p._grid > 1 then
+      multiline[#multiline + 1] = item
+    end
+  end
+  return multiline
+end
+
+---@param visible         mathlive.image.RowPlacement[]
+---@param positions_by_id table<integer, mathlive.image.Position>
+---@param max_height      integer
+---@param scroll_padding  integer
 local function build_virt_lines(visible, positions_by_id, max_height, scroll_padding)
   if max_height <= 1 then
     return nil
@@ -72,6 +106,8 @@ local function build_virt_lines(visible, positions_by_id, max_height, scroll_pad
   return virt_lines
 end
 
+---@param state mathlive.image.renderer.LayoutState
+---@return mathlive.image.renderer.Layout
 local function compute_layout(state)
   local positions_by_id = {}
   local max_height = 1
@@ -83,8 +119,7 @@ local function compute_layout(state)
 
   local function compute_positions()
     local conceallevel = vim.wo.conceallevel
-    local view = vim.fn.winsaveview()
-    local leftcol = tonumber(view and view.leftcol) or 0
+    local leftcol = vim.fn.winsaveview().leftcol
     local projector = Conceal.build_row_projector(state.buf, state.row, state.line_text, state.visible)
 
     for _, item in ipairs(state.visible) do
@@ -104,7 +139,7 @@ local function compute_layout(state)
       if conceallevel == 0 then
         local formula_segment = slice_text(state.line_text, sc, ec)
         display_col = display_col + vim.fn.strdisplaywidth(formula_segment, display_col)
-      elseif conceallevel == 1 and ec > sc then
+      elseif p._grid and #p._grid > 1 and conceallevel == 1 and ec > sc then
         display_col = display_col + 1
       end
       last_end = ec
@@ -126,7 +161,12 @@ local function compute_layout(state)
   end
 
   virt_lines = build_virt_lines(state.visible, positions_by_id, max_height, scroll_padding)
-  anchor = state.visible[1].placement
+  for _, item in ipairs(state.visible) do
+    if item.placement._grid and #item.placement._grid > 1 then
+      anchor = item.placement
+      break
+    end
+  end
 
   return { virt_lines = virt_lines, anchor = anchor }
 end
@@ -142,10 +182,23 @@ function M.index_multiline_inline(placement, range)
   M.unindex_multiline_inline(placement)
 
   local by_buf = Util.ensure_table(State.multiline_inline_rows, placement.buf)
-  local by_row = Util.ensure_table(by_buf, range[1])
-
-  by_row[placement.id] = { placement = placement, range = range }
+  by_buf[range[1]] = true
   placement._multiline_inline_row = range[1]
+end
+
+---@param buf               integer
+---@param row               integer
+---@param ignored_placement mathlive.image.Placement
+local function row_has_multiline_inline(buf, row, ignored_placement)
+  for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, State.ns, { row, 0 }, { row, -1 }, { details = false })) do
+    local entry = State.placements[buf] and State.placements[buf][mark[1]]
+    local p = entry and entry.placement
+    if p and p ~= ignored_placement and p.kind == "inline_formula" and p._grid and #p._grid > 1 then
+      return true
+    end
+  end
+
+  return false
 end
 
 ---@param placement mathlive.image.Placement
@@ -154,13 +207,8 @@ function M.unindex_multiline_inline(placement)
   if not by_buf then return end
 
   local row = placement._multiline_inline_row
-  local by_id = row and by_buf[row]
-
-  if by_id then
-    by_id[placement.id] = nil
-    if not next(by_id) then
-      by_buf[row] = nil
-    end
+  if row and not row_has_multiline_inline(placement.buf, row, placement) then
+    by_buf[row] = nil
   end
 
   placement._multiline_inline_row = nil
@@ -170,24 +218,26 @@ function M.unindex_multiline_inline(placement)
   end
 end
 
----@param row        integer
----@param row_items? table<integer, { placement: mathlive.image.Placement, range: Range4 }>
-local function collect_row_placements(row, row_items)
-  local placements = {} ---@type { placement: mathlive.image.Placement, range: Range4 } []
+---@param buf integer
+---@param row integer
+local function collect_row_placements(buf, row)
+  local placements = {} ---@type mathlive.image.RowPlacement[]
 
-  for id, item in pairs(row_items or {}) do
-    local p = item.placement
-    local range = p:get_range()
+  for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, State.ns, { row, 0 }, { row, -1 }, { details = false })) do
+    local entry = State.placements[buf] and State.placements[buf][mark[1]]
+    local p = entry and entry.placement
 
-    if not range then
-      p:hide()
-      M.unindex_multiline_inline(p)
-      row_items[id] = nil
-    elseif range[1] == row then
-      item.range = range
-      placements[#placements + 1] = item
-    else
-      M.index_multiline_inline(p, range)
+    if p and p.kind == "inline_formula" and p._grid then
+      local range = p:get_range()
+
+      if not range then
+        p:hide()
+        M.unindex_multiline_inline(p)
+      elseif range[1] == row then
+        placements[#placements + 1] = { placement = p, range = range }
+      else
+        M.index_multiline_inline(p, range)
+      end
     end
   end
 
@@ -201,31 +251,25 @@ end
 ---@param buf         integer
 ---@param row         integer
 ---@param target_win? integer
----@param row_items?  table<integer, { placement: mathlive.image.Placement, range: Range4 }>
-function M.render_multiline_inline_row(buf, row, target_win, row_items)
-  row_items = row_items or (State.multiline_inline_rows[buf] and State.multiline_inline_rows[buf][row])
-  if not row_items then return end
+function M.render_multiline_inline_row(buf, row, target_win)
+  if not (State.multiline_inline_rows[buf] and State.multiline_inline_rows[buf][row]) then return end
 
   local line_text = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1] or ""
-  local placements = collect_row_placements(row, row_items)
-  if #placements == 0 then return end
+  local placements = collect_row_placements(buf, row)
+  local multiline = filter_multiline_placements(placements)
+  if #multiline == 0 then return end
 
   local visible = filter_visible_placements(placements)
-  local win = target_win and vim.api.nvim_win_is_valid(target_win)
-    and vim.api.nvim_win_get_buf(target_win) == buf and target_win or get_win_for_buf(buf)
-  local layout = nil
+  local win = target_win or get_win_for_buf(buf)
+  local layout = compute_layout({
+    buf = buf,
+    row = row,
+    line_text = line_text,
+    visible = visible,
+    win = win
+  })
 
-  if #visible > 0 then
-    layout = compute_layout({
-      buf = buf,
-      row = row,
-      line_text = line_text,
-      visible = visible,
-      win = win
-    })
-  end
-
-  for _, item in ipairs(placements) do
+  for _, item in ipairs(multiline) do
     local p = item.placement
     local range = item.range
     local suppressed = is_suppressed_by_preview(p)
@@ -289,6 +333,7 @@ local function render_displayed_equation(placement, grid, hl)
   local grid_height = #grid
   local extmarks = {}
 
+  ---@param row0 integer
   local function line_len(row0)
     local line = vim.api.nvim_buf_get_lines(placement.buf, row0, row0 + 1, false)[1] or ""
     return #line
@@ -357,12 +402,11 @@ local function render_inline_formula(placement, grid)
   })
 end
 
+-- Used for floating window replacing entire buffer content.
 ---@param placement mathlive.image.Placement
 ---@param grid      string[]
 ---@param hl        string
 local function render_preview_inline_formula(placement, grid, hl)
-  -- Used for floating preview window
-  -- Replaces the entire buffer content
   local height = #grid
   vim.bo[placement.buf].modifiable = true
   vim.api.nvim_buf_set_lines(placement.buf, 0, -1, false, grid)

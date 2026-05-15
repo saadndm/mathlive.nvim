@@ -82,10 +82,6 @@ function M.setup_autocmds()
 
   vim.api.nvim_set_decoration_provider(State.ns, {
     on_win = function (_, win, buf, top, bot)
-      if not vim.api.nvim_win_is_valid(win) then
-        provider_rows_by_win[win] = nil
-        return false
-      end
       if win ~= vim.api.nvim_get_current_win() then
         provider_rows_by_win[win] = nil
         return false
@@ -117,9 +113,8 @@ function M.setup_autocmds()
         return
       end
 
-      local row_items = State.multiline_inline_rows[buf] and State.multiline_inline_rows[buf][row]
-      if not row_items then return end
-      Renderer.render_multiline_inline_row(buf, row, win, row_items)
+      if not (State.multiline_inline_rows[buf] and State.multiline_inline_rows[buf][row]) then return end
+      Renderer.render_multiline_inline_row(buf, row, win)
     end,
     on_end = function ()
       provider_rows_by_win = {}
@@ -130,8 +125,6 @@ function M.setup_autocmds()
     pattern = table.concat(Config.filetypes, ","),
     group = group,
     callback = function (e)
-      if not vim.api.nvim_buf_is_valid(e.buf) then return end
-
       Formula.cleanup_buffer(e.buf)
       Scanner.detach(e.buf)
 
