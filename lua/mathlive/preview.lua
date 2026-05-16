@@ -26,6 +26,8 @@ end
 ---@param size mathlive.image.Size
 function M.create_float(size)
   local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].bufhidden = "wipe"
+  vim.bo[buf].swapfile = false
 
   local float = vim.api.nvim_open_win(buf, false, {
     hide = true,
@@ -90,13 +92,16 @@ function M.update()
 end
 
 function M.close_preview()
-  if State.preview then
-    if State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
-      vim.api.nvim_win_close(State.preview.float, true)
+  local preview = State.preview
+  if preview then
+    if preview.float and vim.api.nvim_win_is_valid(preview.float) then
+      vim.api.nvim_win_close(preview.float, true)
     end
-    if State.preview.p then
-      State.preview.p:close()
+
+    if preview.p then
+      preview.p:close()
     end
+
     State.preview = nil
   end
 
