@@ -74,6 +74,7 @@ function M:close()
   self:hide()
   self.img:del(self.id)
   self.eids = {}
+  Util.del_hl("MathLiveImage" .. self.id)
 end
 
 ---@param new_file string

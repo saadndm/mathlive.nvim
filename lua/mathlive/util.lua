@@ -125,6 +125,12 @@ function M.set_hl(groups, opts)
   end
 end
 
+---@param name string
+function M.del_hl(name)
+  hl_groups[name] = nil
+  pcall(vim.api.nvim_set_hl, 0, name, {})
+end
+
 --- Get the dimensions of a PNG file
 ---@param file string
 ---@return mathlive.image.Size
