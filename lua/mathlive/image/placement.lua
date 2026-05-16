@@ -15,6 +15,8 @@ local Util = require("mathlive.util")
 ---@field extmark?               integer
 ---@field _grid?                 string[]
 ---@field _multiline_inline_row? integer
+---@field _kitty_img_id?         integer
+---@field _kitty_size?           mathlive.image.Size
 local M = {}
 M.__index = M
 
@@ -74,6 +76,8 @@ function M:close()
   self:hide()
   self.img:del(self.id)
   self.eids = {}
+  self._kitty_img_id = nil
+  self._kitty_size = nil
   Util.del_hl("MathLiveImage" .. self.id)
 end
 
@@ -87,6 +91,8 @@ function M:replace(new_file)
   self.img = Image.new(new_file)
   self.img.placements[self.id] = self
   self._grid = nil
+  self._kitty_img_id = nil
+  self._kitty_size = nil
 
   if old_img ~= self.img then
     old_img:del(self.id)
@@ -137,7 +143,13 @@ function M:render()
   self.img:ensure_sent(function (supported)
     if not supported or self.closed or self.hidden then return end
     local cell_size = Util.pixels_to_cells(self.img.size)
-    Terminal.create_virtual_placement(self.img.id, self.id, cell_size.width, cell_size.height)
+    local kitty_size = self._kitty_size
+    if self._kitty_img_id ~= self.img.id or not kitty_size
+      or kitty_size.width ~= cell_size.width or kitty_size.height ~= cell_size.height then
+      Terminal.create_virtual_placement(self.img.id, self.id, cell_size.width, cell_size.height)
+      self._kitty_img_id = self.img.id
+      self._kitty_size = cell_size
+    end
     self:render_grid(cell_size)
   end)
 end
