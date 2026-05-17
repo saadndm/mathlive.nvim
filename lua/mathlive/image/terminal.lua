@@ -54,7 +54,13 @@ function M.write(data)
   if vim.env.TMUX then
     data = "\027Ptmux;" .. data:gsub("\027", "\027\027") .. "\027\\"
   end
-  vim.api.nvim_ui_send(data)
+
+  if vim.api.nvim_ui_send then
+    vim.api.nvim_ui_send(data)
+  else
+    io.stdout:write(data)
+    io.stdout:flush()
+  end
 end
 
 M.generate_id = (function ()
