@@ -14,6 +14,8 @@ local Util = require("mathlive.util")
 ---@field closed                 boolean
 ---@field extmark?               integer
 ---@field _grid?                 string[]
+---@field _range?                Range4
+---@field _range_changedtick?    integer
 ---@field _multiline_inline_row? integer
 ---@field _kitty_img_id?         integer
 ---@field _kitty_size?           mathlive.image.Size
@@ -47,13 +49,33 @@ end
 
 function M:get_range()
   assert(self.extmark, "`Placement:get_range` requires valid extmark")
-  if not vim.api.nvim_buf_is_valid(self.buf) then return end
-  return Util.is_valid_extmark(self.buf, State.ns, self.extmark)
+  if not vim.api.nvim_buf_is_valid(self.buf) then
+    self._range = nil
+    self._range_changedtick = nil
+    return
+  end
+
+  local changedtick = vim.b[self.buf].changedtick
+  if self._range and self._range_changedtick == changedtick then
+    return self._range
+  end
+  self._range = Util.is_valid_extmark(self.buf, State.ns, self.extmark)
+  self._range_changedtick = changedtick
+
+  return self._range
+end
+
+---@param range Range4
+function M:set_range(range)
+  self._range = range
+  self._range_changedtick = vim.b[self.buf].changedtick
 end
 
 function M:hide()
   if self.hidden then return end
   self.hidden = true
+  self._range = nil
+  self._range_changedtick = nil
 
   Renderer.unindex_multiline_inline(self)
 

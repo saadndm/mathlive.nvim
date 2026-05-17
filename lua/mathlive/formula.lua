@@ -95,6 +95,11 @@ function M.upsert_formula(buf, range, formula, formula_raw, kind)
     end_right_gravity = false
   })
 
+  local entry = State.placements[buf] and State.placements[buf][extmark]
+  if entry and entry.placement then
+    entry.placement:set_range(range)
+  end
+
   compile_and_place(buf, extmark, formula, formula_raw, kind, Typst.hash(formula))
 end
 
@@ -117,6 +122,9 @@ function M.update_formula_data(buf, extmark, range, formula, formula_raw)
 
   entry.formula = formula
   entry.formula_raw = formula_raw
+  if entry.placement then
+    entry.placement:set_range(range)
+  end
 end
 
 ---@param buf     integer
