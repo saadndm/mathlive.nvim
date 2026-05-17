@@ -50,10 +50,6 @@ end
 
 ---@param cell mathlive.image.Size
 function M.text_size(cell)
-  if Config.text_size ~= "auto" then
-    return Config.text_size
-  end
-
   return string.format("%.4fpt", cell.height * 72 / Config.ppi * Config.text_scale)
 end
 
