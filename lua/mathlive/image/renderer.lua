@@ -120,7 +120,10 @@ local function compute_layout(state)
   local function compute_positions()
     local conceallevel = vim.wo.conceallevel
     local leftcol = vim.fn.winsaveview().leftcol
-    local projector = Conceal.build_row_projector(state.buf, state.row, state.line_text, state.visible)
+    local projector = nil
+    if conceallevel > 0 then
+      projector = Conceal.build_row_projector(state.buf, state.row, state.line_text, state.visible)
+    end
 
     for _, item in ipairs(state.visible) do
       local p = item.placement
@@ -129,7 +132,8 @@ local function compute_layout(state)
       local ec = range[4]
 
       if last_end < sc then
-        local gap_width = projector:screen_width(last_end, sc)
+        local gap_width = projector and projector:screen_width(last_end, sc)
+          or vim.fn.strdisplaywidth(slice_text(state.line_text, last_end, sc), display_col)
         display_col = display_col + gap_width
       end
 
@@ -149,7 +153,7 @@ local function compute_layout(state)
       end
     end
 
-    if conceallevel > 0 and leftcol > 0 then
+    if projector and leftcol > 0 then
       scroll_padding = projector:scroll_padding_before(leftcol)
     end
   end
