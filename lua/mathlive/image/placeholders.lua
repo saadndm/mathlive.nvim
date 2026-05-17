@@ -44,9 +44,15 @@ end
 ---@type string
 M.placeholder = vim.fn.nr2char(0x10EEEE, true)
 
+---@type table<integer, table<integer, string[]?>?>
+local grid_cache = {}
+
 ---@param size mathlive.image.Size
 ---@return string[]
 function M.grid(size)
+  local heights = grid_cache[size.width]
+  if heights and heights[size.height] then return heights[size.height] end
+
   local img = {} ---@type string[]
   local height = math.min(#M.diacritics, size.height)
   local width = math.min(#M.diacritics, size.width)
@@ -60,6 +66,11 @@ function M.grid(size)
     end
     img[#img + 1] = table.concat(line)
   end
+
+  heights = heights or {}
+  grid_cache[size.width] = heights
+  heights[size.height] = img
+
   return img
 end
 
