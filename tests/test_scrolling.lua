@@ -383,9 +383,9 @@ local T = new_set({
       child.lua(
         [[
         require("mathlive.image.terminal").supported = true
-        require("mathlive").setup()
       ]]
       )
+      mock_child.lua([[require("mathlive").setup({ filetypes = {} })]])
 
       set_window_options(child)
       set_window_options(mock_child)

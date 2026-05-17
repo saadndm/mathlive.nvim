@@ -30,7 +30,7 @@ end
 
 function M.setup(opts)
   for k, v in pairs(opts or {}) do
-    if type(v) == "table" and type(M[k]) == "table" then
+    if type(v) == "table" and type(M[k]) == "table" and not vim.islist(v) then
       M[k] = vim.tbl_deep_extend("force", M[k], v)
     else
       M[k] = v

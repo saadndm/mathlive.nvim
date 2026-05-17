@@ -10,6 +10,7 @@ local Util = require("mathlive.util")
 
 ---@class mathlive
 local M = {}
+local autocmds_initialized = false
 
 local function should_render_buf(buf)
   if not vim.api.nvim_buf_is_valid(buf) then return false end
@@ -71,12 +72,36 @@ local function on_formula_nodes(buf, formula_nodes)
   end)
 end
 
+local function attach_buffer(buf)
+  if not should_render_buf(buf) then return end
+
+  Formula.cleanup_buffer(buf)
+  Scanner.detach(buf)
+
+  -- Start scanning immediately, stop later if terminal detection fails
+  Terminal.detect(function (supported)
+    if supported or not vim.api.nvim_buf_is_valid(buf) then return end
+    Formula.cleanup_buffer(buf)
+    Scanner.detach(buf)
+  end)
+
+  Scanner.attach(buf, on_formula_nodes)
+
+  vim.schedule(function ()
+    M.handle_cursor_moved(buf)
+  end)
+end
+
 function M.setup(opts)
   Config.setup(opts)
   M.setup_autocmds()
+  attach_buffer(vim.api.nvim_get_current_buf())
 end
 
 function M.setup_autocmds()
+  if autocmds_initialized then return end
+  autocmds_initialized = true
+
   local group = vim.api.nvim_create_augroup("mathlive", { clear = true })
   local provider_rows_by_win = {}
 
@@ -122,24 +147,10 @@ function M.setup_autocmds()
   })
 
   vim.api.nvim_create_autocmd("FileType", {
-    pattern = table.concat(Config.filetypes, ","),
+    pattern = "*",
     group = group,
     callback = function (e)
-      Formula.cleanup_buffer(e.buf)
-      Scanner.detach(e.buf)
-
-      -- Start scanning immediately, stop later if terminal detection fails
-      Terminal.detect(function (supported)
-        if supported or not vim.api.nvim_buf_is_valid(e.buf) then return end
-        Formula.cleanup_buffer(e.buf)
-        Scanner.detach(e.buf)
-      end)
-
-      Scanner.attach(e.buf, on_formula_nodes)
-
-      vim.schedule(function ()
-        M.handle_cursor_moved(e.buf)
-      end)
+      attach_buffer(e.buf)
     end
   })
 

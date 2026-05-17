@@ -1,1 +1,1 @@
-require("mathlive")
+require("mathlive").setup()

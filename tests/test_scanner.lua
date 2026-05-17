@@ -127,8 +127,6 @@ local T = new_set({
           end
           State.preview = nil
         end
-
-        require("mathlive").setup()
       ]]
       )
 
