@@ -2,11 +2,13 @@
 ---@field filetypes  string[]
 ---@field color_hex  string
 ---@field ppi        integer
+---@field preamble   string
 ---@field text_scale number
 local M = {
   filetypes = { "markdown" },
   color_hex = "",
   ppi = 300,
+  preamble = "",
   text_scale = 1.0
 }
 

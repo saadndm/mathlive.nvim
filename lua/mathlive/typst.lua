@@ -32,6 +32,7 @@ local function get_typst_input(formula)
       #set text(size: %s, fill: rgb("%s"))
       #let cell-w = %.8fpt
       #let cell-h = %.8fpt
+      %s
 
       #let snap-to-grid(body) = context {
         let s = measure(body)
@@ -44,7 +45,7 @@ local function get_typst_input(formula)
       }
 
       #snap-to-grid[$%s$]]=], M.text_size(cell), Config.color_hex, cell.width * 72 / Config.ppi,
-    cell.height * 72 / Config.ppi, formula
+    cell.height * 72 / Config.ppi, Config.preamble, formula
   )
 end
 
@@ -59,6 +60,7 @@ function M.hash(formula)
   return Util.hash(table.concat({
       formula,
       Config.color_hex,
+      Config.preamble,
       M.text_size(cell_size),
       tostring(Config.ppi),
       string.format("%.4f", cell_size.width),
