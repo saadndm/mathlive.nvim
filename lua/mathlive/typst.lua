@@ -126,7 +126,7 @@ function M.watch(callback)
       text = true,
       stderr = function (err, data)
         if err then return end
-        if data and data:find("compiled successfully") then
+        if data and data:find("compiled") then
           vim.schedule(callback)
         end
       end
