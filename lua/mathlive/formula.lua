@@ -108,7 +108,8 @@ end
 ---@param range       Range4
 ---@param formula     string
 ---@param formula_raw string
-function M.update_formula_data(buf, extmark, range, formula, formula_raw)
+---@param kind        mathlive.image.Kind
+function M.update_formula_data(buf, extmark, range, formula, formula_raw, kind)
   local entry = State.placements[buf] and State.placements[buf][extmark]
   if not entry then return end
 
@@ -125,6 +126,14 @@ function M.update_formula_data(buf, extmark, range, formula, formula_raw)
   if entry.placement then
     entry.placement:set_range(range)
   end
+  if entry.kind ~= kind then
+    vim.schedule(function ()
+      if State.preview and State.preview.buf == buf and State.preview.extmark == extmark then
+        Preview.close_preview()
+      end
+    end)
+  end
+  entry.kind = kind
 end
 
 ---@param buf     integer

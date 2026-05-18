@@ -37,7 +37,7 @@ local function on_formula_nodes(buf, formula_nodes)
       end
 
       if is_active_preview and extmark then
-        Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text)
+        Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text, kind)
       elseif is_editing then
         if not extmark then
           extmark = vim.api.nvim_buf_set_extmark(buf, State.ns, sr, sc, {
@@ -60,7 +60,7 @@ local function on_formula_nodes(buf, formula_nodes)
             failed = false
           }
 
-        Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text)
+        Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text, kind)
       else
         Formula.upsert_formula(buf, { sr, sc, er, ec }, formula, text, kind)
       end

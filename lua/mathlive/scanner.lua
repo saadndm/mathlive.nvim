@@ -1,5 +1,6 @@
 local Formula = require("mathlive.formula")
 local State = require("mathlive.state")
+local Typst = require("mathlive.typst")
 local Util = require("mathlive.util")
 
 ---@class mathlive.scanner
@@ -68,8 +69,9 @@ local function scan_tree(buf, tree)
     local sr, sc, _, _ = node:range()
     local id = map[sr .. ":" .. sc]
 
+    local _, kind = Typst.clean_formula(text)
     local p = id and State.placements[buf] and State.placements[buf][id]
-    if not p or p.formula_raw ~= text or (p.placement and p.placement.hidden) then
+    if not p or p.formula_raw ~= text or p.kind ~= kind or (p.placement and p.placement.hidden) then
       table.insert(changed_nodes, node)
     end
     ::continue::
