@@ -6,7 +6,7 @@ local Util = require("mathlive.util")
 ---@class mathlive.scanner
 local M = {}
 
-local attached_trees = {} ---@type table<integer, table<TSTree, boolean>?>
+local attached_trees = {}  ---@type table<integer, table<TSTree, boolean>?>
 
 local math_query = vim.treesitter.query.parse("latex", [[
   (inline_formula) @m
@@ -97,7 +97,7 @@ function M.attach(buf, on_change)
       vim.schedule(function ()
         cleanup_range(buf, main_parser, first, math.max(last_old, last_new))
       end)
-    end
+    end,
   })
 
   local function on_tree_change(_, tree)
@@ -118,7 +118,7 @@ function M.attach(buf, on_change)
     on_child_added = function (ltree)
       if ltree:lang() ~= "latex" then return end
       monitor_ltree(ltree)
-    end
+    end,
   }, true)
 
   main_parser:for_each_tree(function (tree, ltree)

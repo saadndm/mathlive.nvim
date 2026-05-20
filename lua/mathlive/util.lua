@@ -13,14 +13,14 @@ function M.ensure_table(t, key)
   return child
 end
 
-local cell_size ---@type mathlive.image.Size?
+local cell_size  ---@type mathlive.image.Size?  ---@type mathlive.image.Size?  ---@type mathlive.image.Size?  ---@type mathlive.image.Size?
 local winsize_declared = false
 
 vim.api.nvim_create_autocmd("VimResized", {
   group = vim.api.nvim_create_augroup("mathlive.util", { clear = true }),
   callback = function ()
     cell_size = nil
-  end
+  end,
 })
 
 ---@generic T
@@ -87,7 +87,7 @@ function M.pixels_to_cells(size)
   local cell = M.size()
   return M.norm({
     width = size.width / cell.width,
-    height = size.height / cell.height
+    height = size.height / cell.height,
   })
 end
 
@@ -99,14 +99,14 @@ end
 
 ---@alias mathlive.util.hl table<string, string | vim.api.keyset.highlight>
 
-local hl_groups = {} ---@type table<string, vim.api.keyset.highlight>
+local hl_groups = {}  ---@type table<string, vim.api.keyset.highlight>
 vim.api.nvim_create_autocmd("ColorScheme", {
   group = vim.api.nvim_create_augroup("mathlive_util_hl", { clear = true }),
   callback = function ()
     for hl_group, hl in pairs(hl_groups) do
       vim.api.nvim_set_hl(0, hl_group, hl)
     end
-  end
+  end,
 })
 
 --- Ensures the hl groups are always set, even after a colorscheme change.
@@ -116,7 +116,7 @@ function M.set_hl(groups, opts)
   opts = opts or {}
   for hl_group, hl in pairs(groups) do
     hl_group = opts.prefix and opts.prefix .. hl_group or hl_group
-    hl = type(hl) == "string" and { link = hl } or hl --[[@as vim.api.keyset.highlight]]
+    hl = type(hl) == "string" and { link = hl } or hl               --[[@as vim.api.keyset.highlight]]
     hl.default = opts.default
     if opts.managed ~= false then
       hl_groups[hl_group] = hl
@@ -139,7 +139,7 @@ function M.dim(file)
 
   -- extract header with IHDR chunk
   local fd = assert(io.open(file, "rb"), "Failed to open file: " .. file)
-  local header = fd:read(24) ---@type string
+  local header = fd:read(24)                                               ---@type string
   fd:close()
 
   -- Check PNG signature
@@ -180,8 +180,8 @@ function M.is_valid_extmark(buf, ns, extmark_id)
   local details = mark[3]
   if not details or details.end_row == nil or details.end_col == nil then return nil end
 
-  local sr = mark[1] --[[@as integer]]
-  local sc = mark[2] --[[@as integer]]
+  local sr = mark[1]  --[[@as integer]]
+  local sc = mark[2]  --[[@as integer]]
   local line_count = vim.api.nvim_buf_line_count(buf)
 
   if sr >= line_count or details.end_row >= line_count then return nil end

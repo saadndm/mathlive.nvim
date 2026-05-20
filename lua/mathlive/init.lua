@@ -44,7 +44,7 @@ local function on_formula_nodes(buf, formula_nodes)
             end_row = er,
             end_col = ec,
             right_gravity = true,
-            end_right_gravity = false
+            end_right_gravity = false,
           })
         end
 
@@ -57,7 +57,7 @@ local function on_formula_nodes(buf, formula_nodes)
             kind = kind,
             hash = Typst.hash(formula),
             compiling = false,
-            failed = false
+            failed = false,
           }
 
         Formula.update_formula_data(buf, extmark, { sr, sc, er, ec }, formula, text, kind)
@@ -143,7 +143,7 @@ function M.setup_autocmds()
     end,
     on_end = function ()
       provider_rows_by_win = {}
-    end
+    end,
   })
 
   vim.api.nvim_create_autocmd("FileType", {
@@ -151,7 +151,7 @@ function M.setup_autocmds()
     group = group,
     callback = function (e)
       attach_buffer(e.buf)
-    end
+    end,
   })
 
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
@@ -160,7 +160,7 @@ function M.setup_autocmds()
       if not vim.tbl_contains(Config.filetypes, vim.bo[e.buf].filetype) then return end
 
       M.handle_cursor_moved(e.buf)
-    end
+    end,
   })
 
   vim.api.nvim_create_autocmd({ "TextChangedI", "TextChanged" }, {
@@ -169,7 +169,7 @@ function M.setup_autocmds()
       if not vim.tbl_contains(Config.filetypes, vim.bo[e.buf].filetype) then return end
 
       M.update_preview(e.buf)
-    end
+    end,
   })
 
   vim.api.nvim_create_autocmd("WinScrolled", {
@@ -178,7 +178,7 @@ function M.setup_autocmds()
       if not State.preview or State.preview.buf ~= vim.api.nvim_get_current_buf() then return end
 
       M.handle_cursor_moved(State.preview.buf)
-    end
+    end,
   })
 
   vim.api.nvim_create_autocmd("BufLeave", {
@@ -191,7 +191,7 @@ function M.setup_autocmds()
         entry.placement:show()
       end
       Preview.close_preview()
-    end
+    end,
   })
 
   vim.api.nvim_create_autocmd({ "BufUnload", "BufWipeout", "BufDelete" }, {
@@ -204,14 +204,14 @@ function M.setup_autocmds()
         Formula.cleanup_buffer(e.buf)
       end
       Scanner.detach(e.buf)
-    end
+    end,
   })
 
   vim.api.nvim_create_autocmd("VimLeavePre", {
     group = group,
     callback = function ()
       Preview.close_preview()
-    end
+    end,
   })
 end
 
@@ -291,9 +291,9 @@ function M.handle_cursor_moved(buf)
     vim.schedule(function ()
       if State.preview and State.preview.float and vim.api.nvim_win_is_valid(State.preview.float) then
         vim.api.nvim_win_set_config(State.preview.float, {
-          relative = 'editor',
+          relative = "editor",
           row = vim.fn.screenrow(),
-          col = vim.fn.screencol()
+          col = vim.fn.screencol(),
         })
       end
     end)

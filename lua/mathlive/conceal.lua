@@ -67,10 +67,10 @@ end
 ---@param ts_spans     mathlive.conceal.TSSpan[]
 ---@param conceallevel integer
 local function build_column_map(extmarks, ts_spans, conceallevel)
-  local inline_at = {} ---@type table<integer, integer>
-  local covered = {} ---@type table<integer, true?>
-  local replacement_at = {} ---@type table<integer, integer>
-  local concealed = {} ---@type { id: integer, start_col: integer, end_col: integer, conceal: string } []
+  local inline_at = {}  ---@type table<integer, integer>
+  local covered = {}  ---@type table<integer, true?>
+  local replacement_at = {}  ---@type table<integer, integer>
+  local concealed = {}  ---@type { id: integer, start_col: integer, end_col: integer, conceal: string } []
 
   for _, mark in ipairs(extmarks) do
     local d = mark.details
@@ -107,7 +107,7 @@ local function build_column_map(extmarks, ts_spans, conceallevel)
 
   if conceallevel > 0 then
     for _, span in ipairs(ts_spans) do
-      local run_start = nil ---@type integer?
+      local run_start = nil  ---@type integer?
       for col = span.start_col, span.end_col - 1 do
         if not covered[col] then
           covered[col] = true
@@ -182,7 +182,7 @@ end
 ---@param row integer
 function M.collect_ts_spans(buf, row)
   local seen = {}
-  local spans = {} ---@type mathlive.conceal.TSSpan[]
+  local spans = {}  ---@type mathlive.conceal.TSSpan[]
   if not vim.treesitter.highlighter.active[buf] then
     return spans
   end
@@ -305,7 +305,7 @@ end
 ---@param buf integer
 ---@param row integer
 function M.collect_extmarks(buf, row)
-  local marks = {} ---@type mathlive.conceal.Extmark[]
+  local marks = {}  ---@type mathlive.conceal.Extmark[]
   for _, ns_id in pairs(vim.api.nvim_get_namespaces()) do
     if ns_id == our_ns then goto continue end
 
@@ -326,10 +326,10 @@ end
 ---@param end_col   integer
 ---@param extmarks  mathlive.conceal.Extmark[]
 function M.extmark_conceal_delta(start_col, end_col, extmarks)
-  local covered = {} ---@type table<integer, true?>
+  local covered = {}  ---@type table<integer, true?>
   local conceallevel = vim.wo.conceallevel
   local inline_total = 0
-  local concealed = {} ---@type { id: integer, start_col: integer, end_col: integer, conceal: string } []
+  local concealed = {}    ---@type { id: integer, start_col: integer, end_col: integer, conceal: string } []
 
   for _, mark in ipairs(extmarks) do
     local d = mark.details
@@ -399,7 +399,7 @@ function M.build_row_projector(buf, row, line_text, inline_items)
     inline_items = inline_items,
     extmarks = M.collect_extmarks(buf, row),
     ts_spans = M.collect_ts_spans(buf, row),
-    cache_key = string.format("%d:%d", buf, row)
+    cache_key = string.format("%d:%d", buf, row),
   }
 
   function projector:screen_width(start_col, end_col)

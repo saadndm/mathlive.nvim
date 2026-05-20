@@ -48,7 +48,7 @@ end
 
 ---@param placements mathlive.image.RowPlacement[]
 local function filter_visible_placements(placements)
-  local visible = {} ---@type mathlive.image.RowPlacement[]
+  local visible = {}  ---@type mathlive.image.RowPlacement[]
   for _, item in ipairs(placements) do
     local p = item.placement
     if not p.hidden and p._grid and not is_suppressed_by_preview(p) then
@@ -60,7 +60,7 @@ end
 
 ---@param placements mathlive.image.RowPlacement[]
 local function filter_multiline_placements(placements)
-  local multiline = {} ---@type mathlive.image.RowPlacement[]
+  local multiline = {}  ---@type mathlive.image.RowPlacement[]
   for _, item in ipairs(placements) do
     local p = item.placement
     if p._grid and #p._grid > 1 then
@@ -225,7 +225,7 @@ end
 ---@param buf integer
 ---@param row integer
 local function collect_row_placements(buf, row)
-  local placements = {} ---@type mathlive.image.RowPlacement[]
+  local placements = {}  ---@type mathlive.image.RowPlacement[]
 
   for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, State.ns, { row, 0 }, { row, -1 }, { details = false })) do
     local entry = State.placements[buf] and State.placements[buf][mark[1]]
@@ -270,7 +270,7 @@ function M.render_multiline_inline_row(buf, row, target_win)
     row = row,
     line_text = line_text,
     visible = visible,
-    win = win
+    win = win,
   })
 
   for _, item in ipairs(multiline) do
@@ -285,7 +285,7 @@ function M.render_multiline_inline_row(buf, row, target_win)
         end_row = range[3],
         end_col = range[4],
         virt_text_pos = "inline",
-        virt_text_hide = true
+        virt_text_hide = true,
       }
 
       if not suppressed and p._grid then
@@ -320,7 +320,7 @@ local function render_preview_displayed_equation(placement, grid, hl)
   local extmark = { row = er, col = 0, virt_lines = virt_lines }
   extmark.virt_lines_overflow = "scroll"
   placement:_render({
-    extmark
+    extmark,
   })
 end
 
@@ -401,8 +401,8 @@ local function render_inline_formula(placement, grid)
       virt_text_pos = "inline",
       virt_text_hide = true,
       conceal = "",
-      virt_text = { { grid[1], "MathLiveImage" .. placement.id } }
-    }
+      virt_text = { { grid[1], "MathLiveImage" .. placement.id } },
+    },
   })
 end
 

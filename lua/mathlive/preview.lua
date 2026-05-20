@@ -15,11 +15,11 @@ local function position_inline_float(float, preview, size)
     if State.preview ~= preview or not vim.api.nvim_win_is_valid(float) then return end
     vim.api.nvim_win_set_config(float, {
       hide = false,
-      relative = 'editor',
+      relative = "editor",
       row = vim.fn.screenrow(),
       col = vim.fn.screencol(),
       width = size.width,
-      height = size.height
+      height = size.height,
     })
   end)
 end
@@ -32,14 +32,14 @@ function M.create_float(size)
 
   local float = vim.api.nvim_open_win(buf, false, {
     hide = true,
-    relative = 'editor',
+    relative = "editor",
     row = vim.fn.screenrow(),
     col = vim.fn.screencol(),
     border = "rounded",
     width = size.width,
     height = size.height,
     focusable = false,
-    style = "minimal"
+    style = "minimal",
   })
 
   return buf, float
@@ -55,16 +55,16 @@ function M.create(buf, extmark, prev_preview)
   local size = Util.pixels_to_cells(dim)
   local kind = prev_preview.kind
 
-  if kind == 'inline_formula' then
+  if kind == "inline_formula" then
     local preview_buf, float = M.create_float(size)
     State.preview.float = float
-    local p = Placement.new(preview_buf, image_path, 'preview_inline_formula', nil)
+    local p = Placement.new(preview_buf, image_path, "preview_inline_formula", nil)
 
     State.preview.p = p
     p:render()
     position_inline_float(float, State.preview, Util.pixels_to_cells(p.img.size))
   else
-    local p = Placement.new(buf, image_path, 'preview_displayed_equation', extmark)
+    local p = Placement.new(buf, image_path, "preview_displayed_equation", extmark)
     State.preview.p = p
     p:render()
   end
@@ -107,7 +107,7 @@ function M.close_preview()
   end
 
   if State.typst_process then
-    State.typst_process:kill('sigterm')
+    State.typst_process:kill("sigterm")
     State.typst_process = nil
   end
 end

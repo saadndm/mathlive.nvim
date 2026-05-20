@@ -3,7 +3,7 @@
 ---@field generate_id fun(): integer
 local M = {}
 
-local pending ---@type fun(supported: boolean)[]?
+local pending  ---@type fun(supported: boolean)[]?
 
 ---@param terminal string
 local function is_supported(terminal)
@@ -64,7 +64,7 @@ function M.write(data)
 end
 
 M.generate_id = (function ()
-  local bit = require('bit')
+  local bit = require("bit")
   local NVIM_PID_BITS = 10
 
   local nvim_pid = 0
@@ -86,22 +86,22 @@ end)()
 ---@param payload? string
 ---@return string
 function M.seq(control, payload)
-  local parts = { '\027_G' }
+  local parts = { "\027_G" }
 
   local tmp = {}
   for k, v in pairs(control) do
-    table.insert(tmp, k .. '=' .. v)
+    table.insert(tmp, k .. "=" .. v)
   end
   if #tmp > 0 then
-    table.insert(parts, table.concat(tmp, ','))
+    table.insert(parts, table.concat(tmp, ","))
   end
 
-  if payload and payload ~= '' then
-    table.insert(parts, ';')
+  if payload and payload ~= "" then
+    table.insert(parts, ";")
     table.insert(parts, payload)
   end
 
-  table.insert(parts, '\027\\')
+  table.insert(parts, "\027\\")
   return table.concat(parts)
 end
 
@@ -122,14 +122,14 @@ function M.transmit(id, data)
     local control = {}
 
     if pos == 1 then
-      control.f = '100' -- PNG format
-      control.a = 't'   -- Transmit without displaying
-      control.t = 'd'   -- Direct transmission
+      control.f = "100"  -- PNG format
+      control.a = "t"    -- Transmit without displaying
+      control.t = "d"    -- Direct transmission
       control.i = id
-      control.q = '2' -- Suppress responses
+      control.q = "2"  -- Suppress responses
     end
 
-    control.m = is_last and '0' or '1'
+    control.m = is_last and "0" or "1"
 
     M.write(M.seq(control, chunk))
     pos = end_pos + 1
@@ -141,10 +141,10 @@ end
 ---@param file   string
 function M.transmit_local_png(img_id, file)
   M.write(M.seq({
-      t = 'f',
+      t = "f",
       i = img_id,
       f = 100,
-      q = '2'
+      q = "2",
     }, vim.base64.encode(file)))
 end
 
@@ -155,14 +155,14 @@ end
 ---@param height       integer rows
 function M.create_virtual_placement(img_id, placement_id, width, height)
   M.write(M.seq({
-      a = 'p',
-      U = '1',
+      a = "p",
+      U = "1",
       i = img_id,
       p = placement_id,
       c = width,
       r = height,
-      C = '1',
-      q = '2'
+      C = "1",
+      q = "2",
     }))
 end
 
@@ -171,11 +171,11 @@ end
 ---@param placement_id integer
 function M.delete_placement(img_id, placement_id)
   M.write(M.seq({
-      a = 'd',
-      d = 'i',
+      a = "d",
+      d = "i",
       i = img_id,
       p = placement_id,
-      q = '2'
+      q = "2",
     }))
 end
 
@@ -183,10 +183,10 @@ end
 ---@param img_id integer
 function M.delete_image(img_id)
   M.write(M.seq({
-      a = 'd',
-      d = 'I',
+      a = "d",
+      d = "I",
       i = img_id,
-      q = '2'
+      q = "2",
     }))
 end
 

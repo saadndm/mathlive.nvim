@@ -6,17 +6,17 @@ local Helpers = {}
 Helpers.expect = vim.deepcopy(MiniTest.expect)
 
 Helpers.expect.match = MiniTest.new_expectation(
-  'string matching', function (str, pattern) return str:find(pattern) ~= nil end,
-  function (str, pattern) return string.format('Pattern: %s\nObserved string: %s', vim.inspect(pattern), str) end
+  "string matching", function (str, pattern) return str:find(pattern) ~= nil end,
+  function (str, pattern) return string.format("Pattern: %s\nObserved string: %s", vim.inspect(pattern), str) end
 )
 
 Helpers.expect.no_match = MiniTest.new_expectation(
-  'no string matching', function (str, pattern) return str:find(pattern) == nil end,
-  function (str, pattern) return string.format('Pattern: %s\nObserved string: %s', vim.inspect(pattern), str) end
+  "no string matching", function (str, pattern) return str:find(pattern) == nil end,
+  function (str, pattern) return string.format("Pattern: %s\nObserved string: %s", vim.inspect(pattern), str) end
 )
 
 Helpers.expect.equality_approx = MiniTest.new_expectation(
-  'approximate equality',
+  "approximate equality",
   function (x, y, tol)
     if type(x) ~= type(y) then return false end
     if type(x) == 'number' then return math.abs(x - y) <= tol end
@@ -33,14 +33,14 @@ Helpers.expect.equality_approx = MiniTest.new_expectation(
     return true
   end,
   function (x, y, tol)
-    return string.format('Left: %s\nRight: %s\nTolerance: %s', vim.inspect(x), vim.inspect(y), tol)
+    return string.format("Left: %s\nRight: %s\nTolerance: %s", vim.inspect(x), vim.inspect(y), tol)
   end
 )
 
 Helpers.make_partial_tbl = function (tbl, ref)
   local res = {}
   for k, v in pairs(ref) do
-    res[k] = (type(tbl[k]) == 'table' and type(v) == 'table') and Helpers.make_partial_tbl(tbl[k], v) or tbl[k]
+    res[k] = (type(tbl[k]) == "table" and type(v) == "table") and Helpers.make_partial_tbl(tbl[k], v) or tbl[k]
   end
   for i = 1, #tbl do
     if ref[i] == nil then res[i] = tbl[i] end
@@ -49,13 +49,13 @@ Helpers.make_partial_tbl = function (tbl, ref)
 end
 
 Helpers.expect.equality_partial_tbl = MiniTest.new_expectation(
-  'equality of tables only in reference fields',
+  "equality of tables only in reference fields",
   function (x, y)
     if type(x) == 'table' and type(y) == 'table' then x = Helpers.make_partial_tbl(x, y, {}) end
     return vim.deep_equal(x, y)
   end,
   function (x, y)
-    return string.format('Left: %s\nRight: %s', vim.inspect(Helpers.make_partial_tbl(x, y, {})), vim.inspect(y))
+    return string.format("Left: %s\nRight: %s", vim.inspect(Helpers.make_partial_tbl(x, y, {})), vim.inspect(y))
   end
 )
 
@@ -66,12 +66,12 @@ Helpers.new_child_neovim = function ()
   local prevent_hanging = function (method)
     if not child.is_blocked() then return end
 
-    local msg = string.format('Can not use `child.%s` because child process is blocked.', method)
+    local msg = string.format("Can not use `child.%s` because child process is blocked.", method)
     error(msg)
   end
 
   child.setup = function ()
-    child.restart({ '-u', 'scripts/minimal_init.lua' })
+    child.restart({ "-u", "scripts/minimal_init.lua" })
 
     -- Change initial buffer to be readonly. This not only increases execution
     -- speed, but more closely resembles manually opened Neovim.
@@ -79,7 +79,7 @@ Helpers.new_child_neovim = function ()
   end
 
   child.set_lines = function (arr, start, finish)
-    prevent_hanging('set_lines')
+    prevent_hanging("set_lines")
 
     if type(arr) == 'string' then arr = vim.split(arr, '\n') end
 
@@ -87,25 +87,25 @@ Helpers.new_child_neovim = function ()
   end
 
   child.get_lines = function (start, finish)
-    prevent_hanging('get_lines')
+    prevent_hanging("get_lines")
 
     return child.api.nvim_buf_get_lines(0, start or 0, finish or -1, false)
   end
 
   child.set_cursor = function (line, column, win_id)
-    prevent_hanging('set_cursor')
+    prevent_hanging("set_cursor")
 
     child.api.nvim_win_set_cursor(win_id or 0, { line, column })
   end
 
   child.get_cursor = function (win_id)
-    prevent_hanging('get_cursor')
+    prevent_hanging("get_cursor")
 
     return child.api.nvim_win_get_cursor(win_id or 0)
   end
 
   child.set_size = function (lines, columns)
-    prevent_hanging('set_size')
+    prevent_hanging("set_size")
 
     if type(lines) == 'number' then child.o.lines = lines end
 
@@ -113,7 +113,7 @@ Helpers.new_child_neovim = function ()
   end
 
   child.get_size = function ()
-    prevent_hanging('get_size')
+    prevent_hanging("get_size")
 
     return { child.o.lines, child.o.columns }
   end
@@ -128,11 +128,11 @@ Helpers.new_child_neovim = function ()
   child.expect_visual_marks = function (first, last)
     child.ensure_normal_mode()
 
-    first = type(first) == 'number' and { first, 0 } or first
-    last = type(last) == 'number' and { last, 2147483647 } or last
+    first = type(first) == "number" and { first, 0 } or first
+    last = type(last) == "number" and { last, 2147483647 } or last
 
-    MiniTest.expect.equality(child.api.nvim_buf_get_mark(0, '<'), first)
-    MiniTest.expect.equality(child.api.nvim_buf_get_mark(0, '>'), last)
+    MiniTest.expect.equality(child.api.nvim_buf_get_mark(0, "<"), first)
+    MiniTest.expect.equality(child.api.nvim_buf_get_mark(0, ">"), last)
   end
 
   -- Work with 'mini.nvim':
@@ -151,17 +151,17 @@ Helpers.new_child_neovim = function ()
   child.mini_load_strconfig = function (name, strconfig)
     local t = {}
     for key, val in pairs(strconfig) do
-      table.insert(t, key .. ' = ' .. val)
+      table.insert(t, key .. " = " .. val)
     end
-    local str = string.format('{ %s }', table.concat(t, ', '))
+    local str = string.format("{ %s }", table.concat(t, ", "))
 
     local command = ([[require('mini.%s').setup(%s)]]):format(name, str)
     child.lua(command)
   end
 
   child.mini_unload = function (name)
-    local module_name = 'mini.' .. name
-    local tbl_name = 'Mini' .. name:sub(1, 1):upper() .. name:sub(2)
+    local module_name = "mini." .. name
+    local tbl_name = "Mini" .. name:sub(1, 1):upper() .. name:sub(2)
 
     -- Unload Lua module
     child.lua(([[package.loaded['%s'] = nil]]):format(module_name))
@@ -182,30 +182,30 @@ Helpers.new_child_neovim = function ()
 
   -- Poke child's event loop to make it up to date
   child.poke_eventloop = function ()
-    child.api.nvim_eval('1')
+    child.api.nvim_eval("1")
   end
 
   return child
 end
 
 -- Detect CI
-Helpers.is_ci = function () return os.getenv('CI') ~= nil end
+Helpers.is_ci = function () return os.getenv("CI") ~= nil end
 Helpers.skip_in_ci = function (msg)
   if Helpers.is_ci() then MiniTest.skip(msg or 'Does not test properly in CI') end
 end
 
 -- Detect OS
-Helpers.is_windows = function () return vim.fn.has('win32') == 1 end
+Helpers.is_windows = function () return vim.fn.has("win32") == 1 end
 Helpers.skip_on_windows = function (msg)
   if Helpers.is_windows() then MiniTest.skip(msg or 'Does not test properly on Windows') end
 end
 
-Helpers.is_macos = function () return vim.fn.has('mac') == 1 end
+Helpers.is_macos = function () return vim.fn.has("mac") == 1 end
 Helpers.skip_on_macos = function (msg)
   if Helpers.is_macos() then MiniTest.skip(msg or 'Does not test properly on MacOS') end
 end
 
-Helpers.is_linux = function () return vim.fn.has('linux') == 1 end
+Helpers.is_linux = function () return vim.fn.has("linux") == 1 end
 Helpers.skip_on_linux = function (msg)
   if Helpers.is_linux() then MiniTest.skip(msg or 'Does not test properly on Linux') end
 end
@@ -228,7 +228,7 @@ end
 
 Helpers.sleep = function (ms, child, skip_slow)
   if skip_slow then
-    Helpers.skip_if_slow('Skip because state checks after sleep are hard to make robust in slow context')
+    Helpers.skip_if_slow("Skip because state checks after sleep are hard to make robust in slow context")
   end
   vim.loop.sleep(math.max(ms, 1))
   if child ~= nil then child.poke_eventloop() end

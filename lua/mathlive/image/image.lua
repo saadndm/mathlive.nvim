@@ -14,7 +14,7 @@ M.__index = M
 ---@alias mathlive.image.Kind "inline_formula" | "displayed_equation" | "preview_inline_formula" | "preview_displayed_equation"
 ---@alias mathlive.image.Size { width: integer, height: integer }
 
-local images = {} ---@type table<string, mathlive.Image?>
+local images = {}  ---@type table<string, mathlive.Image?>
 
 ---@param file string
 function M.new(file)

@@ -32,7 +32,8 @@ local function visible_width_from_screenshot()
 end
 
 local function add_test_extmarks()
-  child.lua([=[
+  child.lua(
+    [=[
     local buf = vim.api.nvim_get_current_buf()
     local row = 0
     local ns = vim.api.nvim_create_namespace("test")
@@ -117,13 +118,14 @@ local function add_test_extmarks()
     vim.api.nvim_buf_set_extmark(buf, ns, row, wiki_s + 2, {
       end_row = row, end_col = wiki_e - 2, conceal = "",
     })
-  ]=])
+  ]=]
+  )
 end
 
 local T = new_set({
   parametrize = { { 0 }, { 1 }, { 2 }, { 3 } },
   hooks = {
-    pre_case = function()
+    pre_case = function ()
       child.setup()
 
       child.lua([[M = require("mathlive.conceal")]])
@@ -134,13 +136,14 @@ local T = new_set({
   },
 })
 
-T["ts_conceal_delta"] = function(conceallevel)
+T["ts_conceal_delta"] = function (conceallevel)
   set_conceallevel(conceallevel)
   child.set_lines(SAMPLE_LINE)
 
   local visible_width = visible_width_from_screenshot()
 
-  local delta = child.lua_get([[
+  local delta = child.lua_get(
+    [[
     (function ()
       local buf = vim.api.nvim_get_current_buf()
       local row = 0
@@ -149,31 +152,35 @@ T["ts_conceal_delta"] = function(conceallevel)
       local delta = M.ts_conceal_delta(0, #line, {}, spans)
       return delta
     end)()
-  ]])
+  ]]
+  )
 
   eq(visible_width, display_width(SAMPLE_LINE) - delta)
 end
 
-T["extmark_conceal_delta"] = function(conceallevel)
+T["extmark_conceal_delta"] = function (conceallevel)
   set_conceallevel(conceallevel)
 
   -- Disable other conceal sources
   child.g.markdown_syntax_conceal = 0
-  child.lua([[
+  child.lua(
+    [[
     local buf = vim.api.nvim_get_current_buf()
 
     local highlighter = vim.treesitter.highlighter.active[buf]
     if highlighter then
       highlighter:destroy()
     end
-  ]])
+  ]]
+  )
 
   child.set_lines(SAMPLE_LINE)
   add_test_extmarks()
 
   local visible_width = visible_width_from_screenshot()
 
-  local delta = child.lua_get([[
+  local delta = child.lua_get(
+    [[
     (function ()
       local buf = vim.api.nvim_get_current_buf()
       local row = 0
@@ -182,19 +189,21 @@ T["extmark_conceal_delta"] = function(conceallevel)
       local delta = M.extmark_conceal_delta(0, #line, extmarks)
       return delta
     end)()
-  ]])
+  ]]
+  )
 
   eq(visible_width, display_width(SAMPLE_LINE) - delta)
 end
 
-T["projector:screen_width"] = function(conceallevel)
+T["projector:screen_width"] = function (conceallevel)
   set_conceallevel(conceallevel)
   child.set_lines(SAMPLE_LINE)
   add_test_extmarks()
 
   local visible_width = visible_width_from_screenshot()
 
-  local width = child.lua_get([[
+  local width = child.lua_get(
+    [[
     (function ()
       local buf = vim.api.nvim_get_current_buf()
       local row = 0
@@ -202,17 +211,19 @@ T["projector:screen_width"] = function(conceallevel)
       local projector = M.build_row_projector(buf, row, line, {})
       return projector:screen_width(0, #line)
     end)()
-  ]])
+  ]]
+  )
 
   eq(visible_width, width)
 end
 
-T["projector:scroll_padding_before"] = function(conceallevel)
+T["projector:scroll_padding_before"] = function (conceallevel)
   set_conceallevel(conceallevel)
   child.set_lines(SAMPLE_LINE)
   add_test_extmarks()
 
-  local padding = child.lua_get([[
+  local padding = child.lua_get(
+    [[
     (function()
       local Util = require("mathlive.util")
 
@@ -244,7 +255,8 @@ T["projector:scroll_padding_before"] = function(conceallevel)
         at_hidden = projector:scroll_padding_before(before + 3 + replacement_width),
       }
     end)()
-  ]])
+  ]]
+  )
 
   if conceallevel == 1 then
     eq(padding.at_hidden - padding.before_replacement, 1)

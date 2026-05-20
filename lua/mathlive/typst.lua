@@ -64,7 +64,7 @@ function M.hash(formula)
       M.text_size(cell_size),
       tostring(Config.ppi),
       string.format("%.4f", cell_size.width),
-      string.format("%.4f", cell_size.height)
+      string.format("%.4f", cell_size.height),
     }, "\n"))
 end
 
@@ -91,7 +91,7 @@ function M.compile(formula, hash, callback)
     "--pages",
     "1",
     "-",
-    output_path
+    output_path,
   },
     { stdin = typst_input }, function (obj)
       vim.schedule(function ()
@@ -120,7 +120,7 @@ function M.watch(callback)
     "--ppi",
     tostring(Config.ppi),
     State.cache_path .. "temp.typ",
-    State.cache_path .. "temp.png"
+    State.cache_path .. "temp.png",
   },
     {
       text = true,
@@ -129,7 +129,7 @@ function M.watch(callback)
         if data and data:find("compiled") then
           vim.schedule(callback)
         end
-      end
+      end,
     })
 end
 

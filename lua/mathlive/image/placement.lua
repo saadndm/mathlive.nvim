@@ -124,13 +124,13 @@ end
 --- Renders the unicode placeholder grid in the buffer
 ---@param cell_size mathlive.image.Size
 function M:render_grid(cell_size)
-  local hl = "MathLiveImage" .. self.id -- image id is encoded in the foreground color
+  local hl = "MathLiveImage" .. self.id  -- image id is encoded in the foreground color
   Util.set_hl({
     [hl] = {
       fg = self.img.id,
       sp = self.id,
-      nocombine = true
-    }
+      nocombine = true,
+    },
   })
 
   Renderer.render(self, cell_size, hl)
@@ -147,7 +147,7 @@ function M:_render(extmarks)
       e.virt_lines = nil
     end
   end
-  local eids = {} ---@type integer[]
+  local eids = {}  ---@type integer[]
   for _, extmark in ipairs(extmarks) do
     local row, col = extmark.row, extmark.col
     extmark.row, extmark.col, extmark.id = nil, nil, table.remove(self.eids, 1)

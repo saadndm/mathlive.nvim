@@ -132,8 +132,8 @@ local T = new_set({
 
       child.bo.filetype = "markdown"
     end,
-    post_once = child.stop()
-  }
+    post_once = child.stop(),
+  },
 })
 
 T["adds inline equation"] = function ()
@@ -145,8 +145,8 @@ T["adds inline equation"] = function ()
       formula_raw = "$x + 1$",
       kind = "inline_formula",
       range = { 0, 7, 0, 14 },
-      valid = true
-    }
+      valid = true,
+    },
   })
 end
 
@@ -159,8 +159,8 @@ T["adds displayed equation"] = function ()
       formula_raw = "$$\nx + 1\n$$",
       kind = "displayed_equation",
       range = { 1, 0, 3, 2 },
-      valid = true
-    }
+      valid = true,
+    },
   })
 end
 
@@ -174,8 +174,8 @@ T["adds multiple inline equations on one line"] = function ()
       formula_raw = "$y + 1$",
       kind = "inline_formula",
       range = { 0, 8, 0, 15 },
-      valid = true
-    }
+      valid = true,
+    },
   })
 end
 
@@ -189,9 +189,9 @@ T["adds mixed inline and displayed equations"] = function ()
       formula_raw = "$$\nb + c\n$$",
       kind = "displayed_equation",
       range = { 1, 0, 3, 2 },
-      valid = true
+      valid = true,
     },
-    { formula = "d", formula_raw = "$d$", kind = "inline_formula", range = { 4, 7, 4, 10 }, valid = true }
+    { formula = "d", formula_raw = "$d$", kind = "inline_formula", range = { 4, 7, 4, 10 }, valid = true },
   })
 end
 
@@ -205,8 +205,8 @@ T["updates inline equation text"] = function ()
       formula_raw = "$x + 1$",
       kind = "inline_formula",
       range = { 0, 7, 0, 14 },
-      valid = true
-    }
+      valid = true,
+    },
   })
 end
 
@@ -220,8 +220,8 @@ T["updates displayed equation text"] = function ()
       formula_raw = "$$\nx + 1\n$$",
       kind = "displayed_equation",
       range = { 0, 0, 2, 2 },
-      valid = true
-    }
+      valid = true,
+    },
   })
 end
 
@@ -246,7 +246,7 @@ T["removes only deleted equation from line"] = function ()
   child.set_lines({ "$x$ and y" }, 0, 1)
 
   eq(placements(), {
-    { formula = "x", formula_raw = "$x$", kind = "inline_formula", range = { 0, 0, 0, 3 }, valid = true }
+    { formula = "x", formula_raw = "$x$", kind = "inline_formula", range = { 0, 0, 0, 3 }, valid = true },
   })
   eq(stale_placement_count(), 0)
 end
@@ -256,7 +256,7 @@ T["updates inline range after text inserted before it"] = function ()
   child.set_lines({ "prefix a $x$" }, 0, 1)
 
   eq(placements(), {
-    { formula = "x", formula_raw = "$x$", kind = "inline_formula", range = { 0, 9, 0, 12 }, valid = true }
+    { formula = "x", formula_raw = "$x$", kind = "inline_formula", range = { 0, 9, 0, 12 }, valid = true },
   })
 end
 
@@ -270,8 +270,8 @@ T["updates displayed range after lines inserted before it"] = function ()
       formula_raw = "$$\nx\n$$",
       kind = "displayed_equation",
       range = { 2, 0, 4, 2 },
-      valid = true
-    }
+      valid = true,
+    },
   })
 end
 
@@ -311,8 +311,8 @@ T["keeps edited preview data and closes after cursor exits"] = function ()
       formula_raw = "$x + 1$",
       kind = "inline_formula",
       range = { 0, 7, 0, 14 },
-      valid = true
-    }
+      valid = true,
+    },
   })
 end
 

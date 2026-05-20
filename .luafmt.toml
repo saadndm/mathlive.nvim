@@ -1,0 +1,26 @@
+[syntax]
+level = "LuaJIT"
+
+[indent]
+width = 2
+
+[layout]
+prefer_chain_break_on_statement_tail = false
+
+[output]
+quote_style = "Double"
+trailing_table_separator = "Multiline"
+single_arg_call_parens = "Preserve"
+
+[comments]
+align_in_statements = true
+align_in_table_fields = true
+align_in_call_args = true
+align_in_params = true
+align_across_standalone_comments = false
+align_same_kind_only = true
+line_comment_min_spaces_before = 2
+
+[align]
+continuous_assign_statement = false
+table_field = true

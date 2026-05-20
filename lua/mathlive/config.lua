@@ -9,7 +9,7 @@ local M = {
   color_hex = "",
   ppi = 300,
   preamble = "",
-  text_scale = 1.0
+  text_scale = 1.0,
 }
 
 local user_color_hex = nil
@@ -40,7 +40,7 @@ function M.setup(opts)
 
   vim.api.nvim_create_autocmd("ColorScheme", {
     group = vim.api.nvim_create_augroup("mathlive.config", { clear = true }),
-    callback = M.update_color
+    callback = M.update_color,
   })
 end
 

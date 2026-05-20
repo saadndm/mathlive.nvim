@@ -37,7 +37,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, kind, hash)
     kind = kind,
     hash = hash,
     compiling = true,
-    failed = false
+    failed = false,
   }
 
   Typst.compile(formula, hash, function (obj, output_path)
@@ -62,7 +62,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, kind, hash)
         kind = kind,
         path = output_path,
         hash = hash,
-        failed = false
+        failed = false,
       }
 
       if State.preview and State.preview.extmark == extmark and (State.preview.p or State.preview.float) then
@@ -94,7 +94,7 @@ function M.upsert_formula(buf, range, formula, formula_raw, kind)
     end_row = range[3],
     end_col = range[4],
     right_gravity = true,
-    end_right_gravity = false
+    end_right_gravity = false,
   })
 
   local entry = State.placements[buf] and State.placements[buf][extmark]
@@ -120,7 +120,7 @@ function M.update_formula_data(buf, extmark, range, formula, formula_raw, kind)
     end_row = range[3],
     end_col = range[4],
     right_gravity = true,
-    end_right_gravity = false
+    end_right_gravity = false,
   })
 
   entry.formula = formula

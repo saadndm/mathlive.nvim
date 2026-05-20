@@ -6,7 +6,7 @@ local expect, eq = helpers.expect, helpers.expect.equality
 local new_set = MiniTest.new_set
 local SAMPLE_LINES = {
   "prefix $1 + 2$ suffix", "$infinity$ $sum_(n=0)^3 n$ middle $1/(1-x)$ right",
-  "$display(sum_(n=0)^infinity) 1/2 (1/2)^n$", "$vec(1, 2, 3, 4, 5)$", "$$", "vec(1,2,3,4,5)", "$$"
+  "$display(sum_(n=0)^infinity) 1/2 (1/2)^n$", "$vec(1, 2, 3, 4, 5)$", "$$", "vec(1,2,3,4,5)", "$$",
 }
 
 local function set_window_options(target)
@@ -65,7 +65,7 @@ local function append_block(model, block)
       row = base + mark.row - 1,
       col = mark.col,
       end_col = mark.end_col,
-      text = mark.text
+      text = mark.text,
     }
   end
 end
@@ -193,7 +193,7 @@ local function render_inline_block(lines, row, placements, single_inline, concea
       row = 1,
       col = placement.range[2],
       end_col = placement.range[4],
-      text = placement.grid[1] or pad_cells(placement.width)
+      text = placement.grid[1] or pad_cells(placement.width),
     }
   end
 
@@ -226,7 +226,7 @@ local function render_inline_block(lines, row, placements, single_inline, concea
         row = k,
         col = col,
         end_col = col + #visible_formula,
-        text = placement.grid[k] or pad_cells(placement.width)
+        text = placement.grid[k] or pad_cells(placement.width),
       }
 
       col = col + #visible_formula
@@ -257,7 +257,7 @@ local function render_display_block(lines, row, placement, conceallevel)
       row = k,
       col = (source_index == sr) and sc or 0,
       end_col = (source_index <= er) and ((source_index == er) and ec or line_len) or line_len,
-      text = placement.grid[k] or pad_cells(placement.width)
+      text = placement.grid[k] or pad_cells(placement.width),
     }
   end
 
@@ -300,7 +300,7 @@ local function build_mock_model(source_lines, placements, conceallevel)
             row = 1,
             col = placement.range[2],
             end_col = placement.range[4],
-            text = placement.grid[1] or pad_cells(placement.width)
+            text = placement.grid[1] or pad_cells(placement.width),
           }
         end
         append_block(model, block)
@@ -380,11 +380,9 @@ local T = new_set({
       child.setup()
       mock_child.setup()
 
-      child.lua(
-        [[
+      child.lua([[
         require("mathlive.image.terminal").supported = true
-      ]]
-      )
+      ]])
       mock_child.lua([[require("mathlive").setup({ filetypes = {} })]])
 
       set_window_options(child)
@@ -393,8 +391,8 @@ local T = new_set({
     post_once = function ()
       child.stop()
       mock_child.stop()
-    end
-  }
+    end,
+  },
 })
 
 T["scrolling"] = function (conceallevel)
