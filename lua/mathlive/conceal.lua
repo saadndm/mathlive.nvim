@@ -79,7 +79,7 @@ local function build_column_map(extmarks, ts_spans, conceallevel)
       inline_at[mark.col] = (inline_at[mark.col] or 0) + inline_width
     end
 
-    if d.conceal ~= nil and d.end_col and conceallevel > 0 then
+    if d.conceal and d.end_col and conceallevel > 0 then
       concealed[#concealed + 1] = { id = mark.id, start_col = mark.col, end_col = d.end_col, conceal = d.conceal }
       for col = mark.col, d.end_col - 1 do
         covered[col] = true
@@ -95,10 +95,10 @@ local function build_column_map(extmarks, ts_spans, conceallevel)
 
   local i = 1
   while i <= #concealed do
-    local winner = concealed[i]
+    local winner = assert(concealed[i])
     local group_start = winner.start_col
     local j = i + 1
-    while j <= #concealed and concealed[j].start_col == group_start do
+    while j <= #concealed and assert(concealed[j]).start_col == group_start do
       j = j + 1
     end
     replacement_at[group_start] = conceal_replacement_width(winner.conceal, conceallevel)
@@ -150,7 +150,7 @@ local function walk_gap(line_text, start_col, end_col, inline_at, covered, repla
 
       repeat
         col = col + 1
-      until col >= stop_col or not covered[col] or replacement_at[col] ~= nil or (inline_at[col] or 0) > 0
+      until col >= stop_col or not covered[col] or replacement_at[col] or (inline_at[col] or 0) > 0
 
       local hidden_width = math.max(0, (col - hidden_start) - replacement_width)
       if conceallevel == 1 and replacement_width > 0 then
@@ -218,7 +218,7 @@ function M.collect_ts_spans(buf, row)
     for _, tree in ipairs(trees) do
       local root = tree:root()
       for _, node, metadata in query:iter_captures(root, buf, row, row + 1) do
-        if metadata and metadata.conceal ~= nil then
+        if metadata and type(metadata.conceal) == "string" then
           local sr, sc, er, ec = node:range()
           if row < sr or row > er then goto continue end
 
@@ -338,7 +338,7 @@ function M.extmark_conceal_delta(start_col, end_col, extmarks)
       inline_total = inline_total + inline_width
     end
 
-    if d.conceal ~= nil and d.end_col and conceallevel > 0 then
+    if d.conceal and d.end_col and conceallevel > 0 then
       local s = math.max(mark.col, start_col)
       local e = math.min(d.end_col, end_col)
       if e > s then
@@ -439,12 +439,19 @@ function M.build_row_projector(buf, row, line_text, inline_items)
 
       if last_end < sc then
         local done = false
-        walk_gap(self.line_text, last_end, sc, inline_at, covered, replacement_at, conceallevel, function (
-          hidden, width
+        walk_gap(
+          self.line_text,
+          last_end,
+          sc,
+          inline_at,
+          covered,
+          replacement_at,
+          conceallevel,
+          function (hidden, width)
+            done = consume(hidden, width)
+            return done
+          end
         )
-          done = consume(hidden, width)
-          return done
-        end)
         if done then
           return padding
         end

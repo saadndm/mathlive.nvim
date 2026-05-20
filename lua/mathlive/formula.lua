@@ -28,10 +28,10 @@ end
 ---@param hash        string
 local function compile_and_place(buf, extmark, formula, formula_raw, kind, hash)
   local placements = Util.ensure_table(State.placements, buf)
-  local existing = placements[extmark]
+  local old_entry = placements[extmark]
 
   placements[extmark] = {
-    placement = existing and existing.placement or nil,
+    placement = old_entry and old_entry.placement or nil,
     formula = formula,
     formula_raw = formula_raw,
     kind = kind,
@@ -41,7 +41,9 @@ local function compile_and_place(buf, extmark, formula, formula_raw, kind, hash)
   }
 
   Typst.compile(formula, hash, function (obj, output_path)
-    local entry = State.placements[buf] and State.placements[buf][extmark]
+    if State.placements[buf] ~= placements then return end
+
+    local entry = placements[extmark]
     if not entry or entry.hash ~= hash then return end
 
     if obj.code == 0 then
@@ -53,7 +55,7 @@ local function compile_and_place(buf, extmark, formula, formula_raw, kind, hash)
         p = Placement.new(buf, output_path, kind, extmark)
       end
 
-      State.placements[buf][extmark] = {
+      placements[extmark] = {
         placement = p,
         formula = formula,
         formula_raw = formula_raw,

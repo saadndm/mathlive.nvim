@@ -136,7 +136,7 @@ function M:render_grid(cell_size)
   Renderer.render(self, cell_size, hl)
 end
 
----@param extmarks mathlive.image.ExtmarkSpec[]
+---@param extmarks { row: integer, col: integer, [string]: any } []
 function M:_render(extmarks)
   for _, e in ipairs(extmarks) do
     e.undo_restore = false

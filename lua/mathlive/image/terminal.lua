@@ -1,7 +1,7 @@
 ---@class mathlive.image.terminal
+---@field supported   boolean?
+---@field generate_id fun(): integer
 local M = {}
-
-M.supported = nil ---@type boolean?
 
 local pending ---@type fun(supported: boolean)[]?
 

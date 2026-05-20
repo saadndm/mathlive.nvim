@@ -130,7 +130,7 @@ function M.setup_autocmds()
       end
 
       provider_rows_by_win[win] = rows
-      return next(rows) ~= nil
+      return next(rows)
     end,
     on_line = function (_, win, buf, row)
       local rows = provider_rows_by_win[win]

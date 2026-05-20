@@ -3,6 +3,7 @@ local Util = require("mathlive.util")
 local Placement = require("mathlive.image.placement")
 
 ---@class mathlive.preview
+---@field update_debounced fun()
 local M = {}
 
 ---@param float   integer
@@ -49,7 +50,7 @@ end
 ---@param prev_preview mathlive.state.PlacementEntry | mathlive.state.Preview
 function M.create(buf, extmark, prev_preview)
   local image_path = prev_preview.path or (State.cache_path .. "temp.png")
-  State.preview = { buf = buf, extmark = extmark, path = prev_preview.path or "temp.png" }
+  State.preview = { buf = buf, extmark = extmark, path = prev_preview.path or "temp.png", kind = prev_preview.kind }
   local dim = Util.dim(image_path)
   local size = Util.pixels_to_cells(dim)
   local kind = prev_preview.kind

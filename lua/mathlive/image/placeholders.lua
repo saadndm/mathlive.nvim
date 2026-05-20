@@ -9,6 +9,8 @@
 -- scrolling: if the viewport shifts right, cells at the left edge have no left
 -- neighbor and the terminal cannot recover their column position.
 ---@class mathlive.image.Placeholders
+---@field diacritics  table<integer, string>
+---@field placeholder string
 local M = {}
 
 ---@type table<integer, integer>
@@ -35,13 +37,11 @@ local diacritic_codepoints = {
   0x10A38, 0x1D185, 0x1D186, 0x1D187, 0x1D188, 0x1D189, 0x1D1AA, 0x1D1AB, 0x1D1AC, 0x1D1AD, 0x1D242, 0x1D243, 0x1D244
 }
 
----@type table<integer, string>
 M.diacritics = {}
 for _, cp in ipairs(diacritic_codepoints) do
   M.diacritics[#M.diacritics + 1] = vim.fn.nr2char(cp, true)
 end
 
----@type string
 M.placeholder = vim.fn.nr2char(0x10EEEE, true)
 
 ---@type table<integer, table<integer, string[]?>?>
